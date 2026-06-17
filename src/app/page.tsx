@@ -49,10 +49,10 @@ export default function LandingPage() {
     const handleLock = async () => {
         try {
             await fetch('/api/auth/logout', { method: 'POST' });
-            router.push('/login');
+            router.replace('/login');
         } catch (err) {
             console.error('Logout failed:', err);
-            router.push('/login');
+            router.replace('/login');
         }
     };
 
@@ -65,6 +65,8 @@ export default function LandingPage() {
     }
 
     const isAdmin = user && ['admin', 'manager'].includes(user.role);
+    const canUseOrders = user && ['admin', 'manager', 'cashier'].includes(user.role);
+    const canUseKitchen = user && ['admin', 'manager', 'barista'].includes(user.role);
 
     return (
         <main className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-[var(--bg)] to-[color-mix(in_oklch,var(--surface)_82%,var(--accent-soft))] font-sans">
@@ -74,9 +76,9 @@ export default function LandingPage() {
                 <header className="flex items-center justify-between pb-6 border-b border-[var(--border)]">
                     <div>
                         <p className="font-mono text-[var(--accent)] uppercase tracking-[0.08em] text-xs font-extrabold mb-1">Tala Table Coffee</p>
-                        <h1 className="text-4xl font-display font-bold text-[var(--fg)]">Register unlocked</h1>
+                        <h1 className="text-4xl font-display font-bold text-[var(--fg)]">Your workspace is ready</h1>
                         <p className="text-[var(--muted)] text-sm mt-1">
-                            Welcome, <strong className="text-[var(--fg)]">{user?.name}</strong> ({user?.role})
+                            Welcome, <strong className="text-[var(--fg)]">{user?.name}</strong>. Your PIN opened the {user?.role} station.
                         </p>
                     </div>
                     <div className="flex gap-2.5 items-center">
@@ -91,15 +93,16 @@ export default function LandingPage() {
                                 <path d="M8 11V8a4 4 0 0 1 8 0v3" strokeLinecap="round" strokeLinejoin="round"/>
                                 <rect x="5" y="11" width="14" height="10" rx="2" strokeLinecap="round" strokeLinejoin="round"/>
                             </svg>
-                            Lock register
+                            Lock / logout
                         </button>
                     </div>
                 </header>
 
                 {/* Main Navigation Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 my-10 flex-1 items-center">
+                <div className="grid grid-cols-1 md:grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-6 my-10 flex-1 items-center">
                     
                     {/* POS Card */}
+                    {canUseOrders && (
                     <button
                         onClick={() => router.push('/pos')}
                         className="h-full min-h-[280px] rounded-[24px] border border-[var(--border)] bg-gradient-to-br from-[var(--surface)] to-[color-mix(in_oklch,var(--bg)_20%,var(--surface))] p-8 text-left flex flex-col justify-between hover:border-[var(--accent)] hover:shadow-lg active:scale-[0.98] transition-all cursor-pointer group shadow-sm"
@@ -112,11 +115,13 @@ export default function LandingPage() {
                         </div>
                         <div className="mt-8">
                             <h2 className="text-2xl font-display font-bold text-[var(--fg)] group-hover:text-[var(--accent)] transition-colors">Take orders</h2>
-                            <p className="text-[var(--muted)] text-sm mt-2">Cashier terminal, customization, discounts, GCash receipts & checkouts.</p>
+                            <p className="text-[var(--muted)] text-sm mt-2">Large menu buttons, cash shortcuts, and automatic change calculation.</p>
                         </div>
                     </button>
+                    )}
 
                     {/* KDS Card */}
+                    {canUseKitchen && (
                     <button
                         onClick={() => router.push('/kds')}
                         className="h-full min-h-[280px] rounded-[24px] border border-[var(--border)] bg-gradient-to-br from-[var(--surface)] to-[color-mix(in_oklch,var(--bg)_20%,var(--surface))] p-8 text-left flex flex-col justify-between hover:border-[var(--accent)] hover:shadow-lg active:scale-[0.98] transition-all cursor-pointer group shadow-sm"
@@ -127,12 +132,14 @@ export default function LandingPage() {
                             </svg>
                         </div>
                         <div className="mt-8">
-                            <h2 className="text-2xl font-display font-bold text-[var(--fg)] group-hover:text-[var(--accent)] transition-colors">Kitchen display</h2>
-                            <p className="text-[var(--muted)] text-sm mt-2">Barista orders queue, prep timers, aging alerts, and order handout logs.</p>
+                            <h2 className="text-2xl font-display font-bold text-[var(--fg)] group-hover:text-[var(--accent)] transition-colors">Barista queue</h2>
+                            <p className="text-[var(--muted)] text-sm mt-2">Aging colors, prep actions, and a separate ready-for-pickup lane.</p>
                         </div>
                     </button>
+                    )}
 
                     {/* Inventory Card */}
+                    {isAdmin && (
                     <button
                         onClick={() => router.push('/admin/inventory')}
                         className="h-full min-h-[280px] rounded-[24px] border border-[var(--border)] bg-gradient-to-br from-[var(--surface)] to-[color-mix(in_oklch,var(--bg)_20%,var(--surface))] p-8 text-left flex flex-col justify-between hover:border-[var(--accent)] hover:shadow-lg active:scale-[0.98] transition-all cursor-pointer group shadow-sm"
@@ -145,9 +152,10 @@ export default function LandingPage() {
                         </div>
                         <div className="mt-8">
                             <h2 className="text-2xl font-display font-bold text-[var(--fg)] group-hover:text-[var(--accent)] transition-colors">Stock control</h2>
-                            <p className="text-[var(--muted)] text-sm mt-2">Recipe-aware inventory alert status, supplier POs, and daily sales metrics.</p>
+                            <p className="text-[var(--muted)] text-sm mt-2">Recipe-aware raw ingredient levels, supplier POs, and daily reports.</p>
                         </div>
                     </button>
+                    )}
 
                 </div>
 
@@ -161,7 +169,7 @@ export default function LandingPage() {
                             onClick={() => router.push('/admin/dev')}
                             className="font-bold text-[var(--accent)] hover:underline flex items-center gap-1 cursor-pointer"
                         >
-                            🛠️ Dev Settings & DB Admin Panel
+                            Dev settings and database admin
                         </button>
                     )}
                 </footer>

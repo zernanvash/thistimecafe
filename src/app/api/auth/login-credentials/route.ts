@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ensureDb } from '@/db/init';
 import { db } from '@/db/db';
-import { signToken, hashPassword } from '@/utils/auth';
+import { getHomePathForRole, signToken, hashPassword } from '@/utils/auth';
 
 export async function POST(req: NextRequest) {
     try {
@@ -36,7 +36,8 @@ export async function POST(req: NextRequest) {
 
         const response = NextResponse.json({ 
             success: true, 
-            user: { id: user.id, name: user.name, role: user.role } 
+            user: { id: user.id, name: user.name, role: user.role },
+            redirectTo: getHomePathForRole(user.role)
         });
 
         // Set HTTP-only cookie
@@ -49,7 +50,7 @@ export async function POST(req: NextRequest) {
         });
 
         return response;
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Credentials login error:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }

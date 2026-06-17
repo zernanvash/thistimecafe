@@ -3,12 +3,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import SidebarRail from '@/components/SidebarRail';
+import LockButton from '@/components/LockButton';
 import { Ingredient, PurchaseOrder, Order } from '@/db/schema';
 
 export default function AdminInventoryPage() {
     const router = useRouter();
-    const [user, setUser] = useState<{ name: string; role: string } | null>(null);
     const [clock, setClock] = useState<string>('08:42');
     
     // Data states
@@ -65,7 +64,7 @@ export default function AdminInventoryPage() {
             const res = await fetch('/api/auth/session');
             const data = await res.json();
             if (res.ok && data.authenticated) {
-                setUser(data.user);
+                // Session is valid; route access is enforced by proxy/API guards.
             } else {
                 router.push('/login');
             }
@@ -284,18 +283,15 @@ export default function AdminInventoryPage() {
 
     return (
         <main className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-[var(--bg)] to-[color-mix(in_oklch,var(--surface)_82%,var(--accent-soft))] font-sans">
-            <div className="w-full max-w-[1180px] min-h-[820px] bg-[var(--surface)] border border-[var(--border)] rounded-[34px] shadow-[var(--shadow)] overflow-hidden grid grid-cols-[112px_1fr]">
-                {/* Left Navigation Rail */}
-                <SidebarRail active="admin" userRole={user?.role} />
-
-                {/* Right Workspace area */}
+            <div className="w-full max-w-[1280px] min-h-[820px] bg-[var(--surface)] border border-[var(--border)] rounded-[34px] shadow-[var(--shadow)] overflow-hidden">
+                {/* Workspace area */}
                 <div className="grid grid-rows-[86px_1fr] min-width-0">
                     
                     {/* Header */}
                     <header className="border-b border-[var(--border)] p-6.5 flex items-center justify-between gap-[18px]">
                         <div>
                             <h1 className="text-3xl font-display font-bold leading-none">Stock control</h1>
-                            <p className="text-[var(--muted)] text-sm mt-1">Recipe-aware ingredient tracking and supply order replenishment.</p>
+                            <p className="text-[var(--muted)] text-sm mt-1">Track raw ingredients, low stock, and supplier orders.</p>
                         </div>
                         <div className="flex gap-2.5 items-center justify-end">
                             <span className="min-h-[40px] inline-flex items-center gap-2 px-3 border border-[var(--border)] rounded-full text-[var(--muted)] bg-[var(--surface)] text-xs font-bold">
@@ -305,6 +301,7 @@ export default function AdminInventoryPage() {
                             <span className="num min-h-[40px] inline-flex items-center gap-2 px-3 border border-[var(--border)] rounded-full text-[var(--muted)] bg-[var(--surface)] text-xs font-bold">
                                 {clock}
                             </span>
+                            <LockButton />
                         </div>
                     </header>
 
@@ -318,7 +315,7 @@ export default function AdminInventoryPage() {
                                     activeTab === 'inventory' ? 'bg-[var(--accent)] text-white' : 'text-[var(--muted)] hover:bg-[var(--fg-soft)] hover:text-[var(--fg)]'
                                 }`}
                             >
-                                📦 Raw Ingredients
+                                Raw ingredients
                             </button>
                             <button
                                 onClick={() => setActiveTab('po')}
@@ -326,7 +323,7 @@ export default function AdminInventoryPage() {
                                     activeTab === 'po' ? 'bg-[var(--accent)] text-white' : 'text-[var(--muted)] hover:bg-[var(--fg-soft)] hover:text-[var(--fg)]'
                                 }`}
                             >
-                                🚚 Supplier POs
+                                Supplier orders
                             </button>
                             <button
                                 onClick={() => setActiveTab('reports')}
@@ -334,7 +331,7 @@ export default function AdminInventoryPage() {
                                     activeTab === 'reports' ? 'bg-[var(--accent)] text-white' : 'text-[var(--muted)] hover:bg-[var(--fg-soft)] hover:text-[var(--fg)]'
                                 }`}
                             >
-                                📊 Sales Reports
+                                Sales reports
                             </button>
                         </div>
 
@@ -360,15 +357,13 @@ export default function AdminInventoryPage() {
                                                                 <th className="right">On hand</th>
                                                                 <th>Level</th>
                                                                 <th className="right">Reorder safety</th>
-                                                                <th className="right">Quick adjust</th>
+                                                                <th className="right">Adjust</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody>
                                                             {ingredients.map(ing => {
                                                                 const pct = getStockPercentage(ing);
                                                                 const levelClass = getLevelClass(ing);
-                                                                const isLow = ing.stock <= ing.min_threshold;
-                                                                
                                                                 return (
                                                                     <tr key={ing.id} className="hover:bg-[var(--fg-soft)] border-b border-[var(--border)]">
                                                                         <td>
@@ -456,7 +451,7 @@ export default function AdminInventoryPage() {
                                                             <label className="text-[10px] font-bold text-[var(--muted)] uppercase">Unit</label>
                                                             <select
                                                                 value={ingUnit}
-                                                                onChange={(e) => setIngUnit(e.target.value as any)}
+                                                                onChange={(e) => setIngUnit(e.target.value as Ingredient['unit'])}
                                                                 className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-xs"
                                                             >
                                                                 <option value="g">Grams (g)</option>
@@ -536,7 +531,7 @@ export default function AdminInventoryPage() {
                                         <div className="grid grid-cols-1 xl:grid-cols-[360px_1fr] gap-6">
                                             {/* PO Builder Form */}
                                             <div className="border border-[var(--border)] rounded-[var(--radius)] p-6 bg-[var(--surface)] space-y-4">
-                                                <h3 className="font-display font-bold text-base text-[var(--fg)]">Create Replenishment PO</h3>
+                                                <h3 className="font-display font-bold text-base text-[var(--fg)]">Create supplier order</h3>
                                                 {poError && <p className="text-red-500 text-xs">{poError}</p>}
 
                                                 <form onSubmit={handleCreatePO} className="space-y-4">

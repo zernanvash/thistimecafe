@@ -41,9 +41,35 @@ function base64urlDecodeToBuffer(str: string): ArrayBuffer {
 
 export interface JWTPayload {
     userId: string;
-    role: 'admin' | 'cashier' | 'barista' | 'manager';
+    role: StaffRole;
     name: string;
     exp: number;
+}
+
+export type StaffRole = 'admin' | 'cashier' | 'barista' | 'manager';
+
+export function getHomePathForRole(role: StaffRole): string {
+    if (role === 'cashier') return '/pos';
+    if (role === 'barista') return '/kds';
+    return '/';
+}
+
+export function canRoleAccessPath(role: StaffRole, pathname: string): boolean {
+    if (pathname === '/' || pathname.startsWith('/api/auth')) return true;
+
+    const adminRoutes = ['/admin', '/api/admin'];
+    const cashierRoutes = ['/pos', '/api/products', '/api/ingredients', '/api/orders'];
+    const baristaRoutes = ['/kds', '/api/orders'];
+
+    if (role === 'admin' || role === 'manager') {
+        return [...adminRoutes, ...cashierRoutes, ...baristaRoutes].some((path) => pathname.startsWith(path));
+    }
+
+    if (role === 'cashier') {
+        return cashierRoutes.some((path) => pathname.startsWith(path));
+    }
+
+    return baristaRoutes.some((path) => pathname.startsWith(path));
 }
 
 // Get SubtleCrypto key
@@ -60,8 +86,23 @@ async function getCryptoKey(): Promise<CryptoKey> {
 
 export async function hashPassword(password: string): Promise<string> {
     const enc = new TextEncoder();
-    const data = enc.encode(password + 'ttc-pos-salt');
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const keyMaterial = await crypto.subtle.importKey(
+        'raw',
+        enc.encode(password),
+        'PBKDF2',
+        false,
+        ['deriveBits']
+    );
+    const hashBuffer = await crypto.subtle.deriveBits(
+        {
+            name: 'PBKDF2',
+            salt: enc.encode('ttc-pos-salt'),
+            iterations: 1000,
+            hash: 'SHA-512'
+        },
+        keyMaterial,
+        512
+    );
     const hashArray = Array.from(new Uint8Array(hashBuffer));
     return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
@@ -114,7 +155,7 @@ export async function verifyToken(token: string): Promise<JWTPayload | null> {
         }
 
         return decodedPayload;
-    } catch (e) {
+    } catch {
         return null;
     }
 }

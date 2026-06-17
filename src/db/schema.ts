@@ -4,7 +4,7 @@ export interface User {
     email?: string;
     password?: string; // hashed
     role: 'admin' | 'cashier' | 'barista' | 'manager';
-    passcode?: string; // 4-digit passcode for Cashier/Barista quick login
+    passcode?: string; // 6-digit PIN for role-specific staff access
     created_at: string;
 }
 

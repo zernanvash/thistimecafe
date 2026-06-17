@@ -208,6 +208,13 @@ const mongoDbInstance: DBInstance = {
         await db.collection('orders').createIndex({ id: 1 }, { unique: true });
         await db.collection('purchase_orders').createIndex({ id: 1 }, { unique: true });
 
+        // Keep local seeded accounts aligned with the current 6-digit PIN rule.
+        await db.collection('users').bulkWrite([
+            { updateOne: { filter: { id: 'u-1' }, update: { $set: { passcode: '123456' } } } },
+            { updateOne: { filter: { id: 'u-2' }, update: { $set: { passcode: '111111' } } } },
+            { updateOne: { filter: { id: 'u-3' }, update: { $set: { passcode: '222222' } } } }
+        ], { ordered: false });
+
         // Seed if users is empty
         const userCount = await db.collection('users').countDocuments();
         if (userCount === 0) {
@@ -219,7 +226,7 @@ const mongoDbInstance: DBInstance = {
                 email: 'admin@example.com',
                 password: hashPassword('password'),
                 role: 'admin',
-                passcode: '1234',
+                passcode: '123456',
                 created_at: new Date().toISOString()
             };
             const cashierUser: User = {
@@ -228,7 +235,7 @@ const mongoDbInstance: DBInstance = {
                 email: 'cashier@example.com',
                 password: hashPassword('password'),
                 role: 'cashier',
-                passcode: '1111',
+                passcode: '111111',
                 created_at: new Date().toISOString()
             };
             const baristaUser: User = {
@@ -237,7 +244,7 @@ const mongoDbInstance: DBInstance = {
                 email: 'barista@example.com',
                 password: hashPassword('password'),
                 role: 'barista',
-                passcode: '2222',
+                passcode: '222222',
                 created_at: new Date().toISOString()
             };
 

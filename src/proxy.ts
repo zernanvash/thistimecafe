@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { getSession } from './utils/auth';
+import { canRoleAccessPath, getHomePathForRole, getSession } from './utils/auth';
 
 export async function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl;
@@ -25,22 +25,18 @@ export async function proxy(request: NextRequest) {
     }
     // 2. If logged in and trying to access the login page
     if (session && isAuthPage) {
-        return NextResponse.redirect(new URL('/', request.url));
+        return NextResponse.redirect(new URL(getHomePathForRole(session.role), request.url));
     }
 
     // 3. Role-based authorization
-    if (session) {
-        // Dev console paths require admin or manager credentials
-        const isDevPath = pathname.startsWith('/admin/dev') || pathname.startsWith('/api/admin/dev');
-        if (isDevPath && !['admin', 'manager'].includes(session.role)) {
-            if (pathname.startsWith('/api/')) {
-                return new NextResponse(
-                    JSON.stringify({ error: 'Forbidden. Developer/Admin privileges required.' }),
-                    { status: 403, headers: { 'content-type': 'application/json' } }
-                );
-            }
-            return NextResponse.redirect(new URL('/', request.url));
+    if (session && !canRoleAccessPath(session.role, pathname)) {
+        if (pathname.startsWith('/api/')) {
+            return new NextResponse(
+                JSON.stringify({ error: 'Forbidden. This PIN does not allow that workspace.' }),
+                { status: 403, headers: { 'content-type': 'application/json' } }
+            );
         }
+        return NextResponse.redirect(new URL(getHomePathForRole(session.role), request.url));
     }
     return NextResponse.next();
 }
@@ -48,6 +44,7 @@ export async function proxy(request: NextRequest) {
 // Config to specify matching routes
 export const config = {
     matcher: [
+        '/',
         '/login',
         '/pos/:path*',
         '/kds/:path*',

@@ -3,11 +3,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import SidebarRail from '@/components/SidebarRail';
+import LockButton from '@/components/LockButton';
+import { User, Product, Ingredient, Order, PurchaseOrder } from '@/db/schema';
 
 export default function AdminDevPage() {
     const router = useRouter();
-    const [user, setUser] = useState<{ name: string; role: string } | null>(null);
     const [clock, setClock] = useState<string>('08:42');
     const [loading, setLoading] = useState<boolean>(true);
     
@@ -22,11 +22,11 @@ export default function AdminDevPage() {
             purchaseOrders: number;
         };
         raw: {
-            users: any[];
-            products: any[];
-            ingredients: any[];
-            orders: any[];
-            purchaseOrders: any[];
+            users: User[];
+            products: Product[];
+            ingredients: Ingredient[];
+            orders: Order[];
+            purchaseOrders: PurchaseOrder[];
         };
     } | null>(null);
 
@@ -52,7 +52,7 @@ export default function AdminDevPage() {
             const sessionRes = await fetch('/api/auth/session');
             const sessionData = await sessionRes.json();
             if (sessionRes.ok && sessionData.authenticated && ['admin', 'manager'].includes(sessionData.user.role)) {
-                setUser(sessionData.user);
+                // Session is valid; route access is enforced by proxy/API guards.
             } else {
                 router.push('/login');
                 return;
@@ -100,11 +100,8 @@ export default function AdminDevPage() {
 
     return (
         <main className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-[var(--bg)] to-[color-mix(in_oklch,var(--surface)_82%,var(--accent-soft))] font-sans">
-            <div className="w-full max-w-[1180px] min-h-[820px] bg-[var(--surface)] border border-[var(--border)] rounded-[34px] shadow-[var(--shadow)] overflow-hidden grid grid-cols-[112px_1fr]">
-                {/* Left Navigation Rail */}
-                <SidebarRail active="admin" userRole={user?.role} />
-
-                {/* Right Workspace area */}
+            <div className="w-full max-w-[1280px] min-h-[820px] bg-[var(--surface)] border border-[var(--border)] rounded-[34px] shadow-[var(--shadow)] overflow-hidden">
+                {/* Workspace area */}
                 <div className="grid grid-rows-[86px_1fr] min-width-0">
                     
                     {/* Header */}
@@ -121,6 +118,7 @@ export default function AdminDevPage() {
                             <span className="num min-h-[40px] inline-flex items-center gap-2 px-3 border border-[var(--border)] rounded-full text-[var(--muted)] bg-[var(--surface)] text-xs font-bold">
                                 {clock}
                             </span>
+                            <LockButton />
                         </div>
                     </header>
 

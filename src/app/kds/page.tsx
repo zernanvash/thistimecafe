@@ -3,12 +3,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import SidebarRail from '@/components/SidebarRail';
+import LockButton from '@/components/LockButton';
 import { Order } from '@/db/schema';
 
 export default function KDSPage() {
     const router = useRouter();
-    const [user, setUser] = useState<{ name: string; role: string } | null>(null);
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [now, setNow] = useState<Date>(new Date());
@@ -31,7 +30,7 @@ export default function KDSPage() {
             const res = await fetch('/api/auth/session');
             const data = await res.json();
             if (res.ok && data.authenticated) {
-                setUser(data.user);
+                // Session is valid; route access is enforced by proxy/API guards.
             } else {
                 router.push('/login');
             }
@@ -91,8 +90,8 @@ export default function KDSPage() {
 
     // Age styling matching prototype: ok (green), warn (orange), danger (pulsing red)
     const getOrderUrgencyState = (mins: number) => {
-        if (mins >= 10) return { className: 'border-[var(--danger)] kds-card-urgent', badgeColor: 'text-[var(--danger)]', label: 'Needs bump' };
-        if (mins >= 5) return { className: 'border-[var(--warn)]', badgeColor: 'text-[var(--warn)]', label: 'Watch' };
+        if (mins >= 10) return { className: 'border-[var(--danger)] kds-card-urgent', badgeColor: 'text-[var(--danger)]', label: 'Late' };
+        if (mins >= 5) return { className: 'border-[var(--warn)]', badgeColor: 'text-[var(--warn)]', label: 'Soon' };
         return { className: 'border-[var(--ok)]', badgeColor: 'text-[var(--ok)]', label: 'On track' };
     };
 
@@ -101,18 +100,15 @@ export default function KDSPage() {
 
     return (
         <main className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-[var(--bg)] to-[color-mix(in_oklch,var(--surface)_82%,var(--accent-soft))] font-sans">
-            <div className="w-full max-w-[1180px] min-h-[820px] bg-[var(--surface)] border border-[var(--border)] rounded-[34px] shadow-[var(--shadow)] overflow-hidden grid grid-cols-[112px_1fr]">
-                {/* Left Navigation Rail */}
-                <SidebarRail active="kds" userRole={user?.role} />
-
-                {/* Right Workspace area */}
+            <div className="w-full max-w-[1280px] min-h-[820px] bg-[var(--surface)] border border-[var(--border)] rounded-[34px] shadow-[var(--shadow)] overflow-hidden">
+                {/* Workspace area */}
                 <div className="grid grid-rows-[86px_1fr] min-width-0">
                     
                     {/* Header */}
                     <header className="border-b border-[var(--border)] p-6.5 flex items-center justify-between gap-[18px]">
                         <div>
                             <h1 className="text-3xl font-display font-bold leading-none">Barista queue</h1>
-                            <p className="text-[var(--muted)] text-sm mt-1">Live order prep queue with color-mix aging borders and timers.</p>
+                            <p className="text-[var(--muted)] text-sm mt-1">Green is on time, orange is waiting, red needs attention.</p>
                         </div>
                         <div className="flex gap-2.5 items-center justify-end">
                             <span className="min-h-[40px] inline-flex items-center gap-2 px-3 border border-[var(--border)] rounded-full text-[var(--muted)] bg-[var(--surface)] text-xs font-bold">
@@ -122,6 +118,7 @@ export default function KDSPage() {
                             <span className="num min-h-[40px] inline-flex items-center gap-2 px-3 border border-[var(--border)] rounded-full text-[var(--muted)] bg-[var(--surface)] text-xs font-bold">
                                 {clock}
                             </span>
+                            <LockButton />
                         </div>
                     </header>
 
@@ -131,7 +128,7 @@ export default function KDSPage() {
                         <div className="col-span-8 flex flex-col p-6 border-r border-[var(--border)] overflow-hidden min-height-0">
                             <div className="flex justify-between items-center mb-5">
                                 <div className="flex items-center gap-3">
-                                    <h2 className="text-2xl font-display font-bold text-[var(--fg)]">Preparation Queue</h2>
+                                    <h2 className="text-2xl font-display font-bold text-[var(--fg)]">Make now</h2>
                                     <span className="px-2.5 py-0.5 rounded-full bg-[var(--accent-soft)] border border-[var(--border)] text-xs font-extrabold text-[var(--accent)] num">
                                         {activeQueue.length} Orders
                                     </span>
@@ -199,7 +196,7 @@ export default function KDSPage() {
                                                             )}
                                                             {item.notes && (
                                                                 <div className="text-xs font-bold text-[var(--accent)] bg-[var(--accent-soft)] px-2 py-1 rounded-lg border border-[var(--border)] mt-1 inline-block">
-                                                                    💡 "{item.notes}"
+                                                                    Note: &quot;{item.notes}&quot;
                                                                 </div>
                                                             )}
                                                         </div>
@@ -244,7 +241,7 @@ export default function KDSPage() {
                         <div className="col-span-4 flex flex-col p-6 bg-[color-mix(in_oklch,var(--fg)_4%,var(--surface))] overflow-hidden min-height-0">
                             <div className="flex justify-between items-center mb-5">
                                 <div className="flex items-center gap-3">
-                                    <h2 className="text-2xl font-display font-bold text-[var(--fg)]">Ready / Pickup</h2>
+                                    <h2 className="text-2xl font-display font-bold text-[var(--fg)]">Ready for pickup</h2>
                                     <span className="px-2.5 py-0.5 rounded-full bg-green-100 border border-green-200 text-xs font-extrabold text-green-600 num">
                                         {readyQueue.length} Orders
                                     </span>

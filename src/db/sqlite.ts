@@ -353,6 +353,15 @@ const sqliteDbInstance: DBInstance = {
             );
         `);
 
+        // Keep local seeded accounts aligned with the current 6-digit PIN rule.
+        const seedPinUpdates = [
+            { id: 'u-1', passcode: '123456' },
+            { id: 'u-2', passcode: '111111' },
+            { id: 'u-3', passcode: '222222' }
+        ];
+        const updateSeedPin = connection.prepare('UPDATE users SET passcode = ? WHERE id = ?');
+        seedPinUpdates.forEach((user) => updateSeedPin.run(user.passcode, user.id));
+
         // Check if database needs seeding
         const userCount = connection.prepare('SELECT COUNT(*) as count FROM users').get() as any;
         if (userCount.count === 0) {
@@ -365,7 +374,7 @@ const sqliteDbInstance: DBInstance = {
                 email: 'admin@example.com',
                 password: hashPassword('password'),
                 role: 'admin',
-                passcode: '1234',
+                passcode: '123456',
                 created_at: new Date().toISOString()
             };
             const cashierUser: User = {
@@ -374,7 +383,7 @@ const sqliteDbInstance: DBInstance = {
                 email: 'cashier@example.com',
                 password: hashPassword('password'),
                 role: 'cashier',
-                passcode: '1111',
+                passcode: '111111',
                 created_at: new Date().toISOString()
             };
             const baristaUser: User = {
@@ -383,7 +392,7 @@ const sqliteDbInstance: DBInstance = {
                 email: 'barista@example.com',
                 password: hashPassword('password'),
                 role: 'barista',
-                passcode: '2222',
+                passcode: '222222',
                 created_at: new Date().toISOString()
             };
 

@@ -1,10 +1,10 @@
 'use strict';
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import SidebarRail from '@/components/SidebarRail';
-import { Product, Ingredient } from '@/db/schema';
+import LockButton from '@/components/LockButton';
+import { Product, Ingredient, Order } from '@/db/schema';
 
 interface CartItem {
     id: string; // unique item instance ID in cart
@@ -17,7 +17,7 @@ interface CartItem {
 
 export default function POSPage() {
     const router = useRouter();
-    const [user, setUser] = useState<{ name: string; role: string } | null>(null);
+    const cartItemSeq = useRef(0);
     const [products, setProducts] = useState<Product[]>([]);
     const [ingredients, setIngredients] = useState<Ingredient[]>([]);
     const [categories, setCategories] = useState<string[]>(['All items', 'Coffee', 'Tea', 'Pastry', 'Cold bar']);
@@ -45,7 +45,12 @@ export default function POSPage() {
     const [errorMessage, setErrorMessage] = useState<string>('');
     
     // Receipt Modal States
-    const [completedOrder, setCompletedOrder] = useState<any | null>(null);
+    const [completedOrder, setCompletedOrder] = useState<Order | null>(null);
+
+    const createCartItemId = () => {
+        cartItemSeq.current += 1;
+        return `c-item-${cartItemSeq.current}`;
+    };
 
     // Sync clock
     useEffect(() => {
@@ -65,7 +70,7 @@ export default function POSPage() {
                 const sessionRes = await fetch('/api/auth/session');
                 const sessionData = await sessionRes.json();
                 if (sessionRes.ok && sessionData.authenticated) {
-                    setUser(sessionData.user);
+                    // Session is valid; route access is enforced by proxy/API guards.
                 } else {
                     router.push('/login');
                     return;
@@ -128,7 +133,7 @@ export default function POSPage() {
             setCart(newCart);
         } else {
             setCart([...cart, {
-                id: `c-item-${Date.now()}`,
+                id: createCartItemId(),
                 product,
                 quantity: 1,
                 customizations: [],
@@ -172,7 +177,7 @@ export default function POSPage() {
         const finalPricePerUnit = Math.max(0, customizingProduct.price + priceImpact);
 
         setCart([...cart, {
-            id: `c-item-${Date.now()}`,
+            id: createCartItemId(),
             product: customizingProduct,
             quantity: 1,
             customizations,
@@ -318,18 +323,15 @@ export default function POSPage() {
 
     return (
         <main className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-[var(--bg)] to-[color-mix(in_oklch,var(--surface)_82%,var(--accent-soft))] font-sans">
-            <div className="w-full max-w-[1180px] min-h-[820px] bg-[var(--surface)] border border-[var(--border)] rounded-[34px] shadow-[var(--shadow)] overflow-hidden grid grid-cols-[112px_1fr]">
-                {/* Left Navigation Rail */}
-                <SidebarRail active="pos" userRole={user?.role} />
-
-                {/* Right Workspace area */}
+            <div className="w-full max-w-[1280px] min-h-[820px] bg-[var(--surface)] border border-[var(--border)] rounded-[34px] shadow-[var(--shadow)] overflow-hidden">
+                {/* Workspace area */}
                 <div className="grid grid-rows-[86px_1fr] min-width-0">
                     
                     {/* Header */}
                     <header className="border-b border-[var(--border)] p-6.5 flex items-center justify-between gap-[18px]">
                         <div>
-                            <h1 className="text-3xl font-display font-bold leading-none">Order-taking</h1>
-                            <p className="text-[var(--muted)] text-sm mt-1">Touch-first menu grid with instant cash calculator and auto-change.</p>
+                            <h1 className="text-3xl font-display font-bold leading-none">Cashier orders</h1>
+                            <p className="text-[var(--muted)] text-sm mt-1">Tap items, take payment, and see change without extra steps.</p>
                         </div>
                         <div className="flex gap-2.5 items-center justify-end">
                             <span className="min-h-[40px] inline-flex items-center gap-2 px-3 border border-[var(--border)] rounded-full text-[var(--muted)] bg-[var(--surface)] text-xs font-bold">
@@ -339,6 +341,7 @@ export default function POSPage() {
                             <span className="num min-h-[40px] inline-flex items-center gap-2 px-3 border border-[var(--border)] rounded-full text-[var(--muted)] bg-[var(--surface)] text-xs font-bold">
                                 {clock}
                             </span>
+                            <LockButton />
                         </div>
                     </header>
 
@@ -412,7 +415,7 @@ export default function POSPage() {
                             {/* Cart Header */}
                             <div className="p-4.5 border-b border-[var(--border)] flex justify-between items-center">
                                 <div>
-                                    <p className="font-mono text-[var(--accent)] uppercase tracking-wider text-[10px] font-extrabold">Register Active</p>
+                                    <p className="font-mono text-[var(--accent)] uppercase tracking-wider text-[10px] font-extrabold">Current sale</p>
                                     <h2 className="text-2xl font-display font-bold text-[var(--fg)]">Current order</h2>
                                 </div>
                             </div>
@@ -429,7 +432,7 @@ export default function POSPage() {
                                                 <small className="text-[var(--muted)] text-[10px] leading-tight block mt-0.5">
                                                     {item.customizations.length > 0 ? item.customizations.map(c => c.name).join(', ') : getRecipeDescription(item.product)}
                                                 </small>
-                                                {item.notes && <div className="text-[9px] text-[var(--accent)] italic">"{item.notes}"</div>}
+                                                {item.notes && <div className="text-[9px] text-[var(--accent)] italic">&quot;{item.notes}&quot;</div>}
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <button
@@ -477,34 +480,46 @@ export default function POSPage() {
 
                                 {/* Cash flow selectors */}
                                 <div className="space-y-3.5 border-t border-[var(--border)] pt-3.5">
-                                    <div className="min-h-[58px] border border-[var(--border)] rounded-2xl flex items-center justify-between px-3.5 bg-[var(--surface)]">
+                                    <div className="min-h-[58px] border border-[var(--border)] rounded-2xl flex items-center justify-between px-3.5 bg-[var(--surface)] focus-within:border-[var(--accent)] transition-all">
                                         <span className="text-xs text-[var(--muted)] font-bold">Cash received</span>
-                                        <strong className="num text-xl font-bold">{formatCurrency(cashReceived)}</strong>
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="text-xs text-[var(--muted)] font-bold">PHP</span>
+                                            <input
+                                                type="number"
+                                                value={cashReceived === 0 ? '' : cashReceived}
+                                                onChange={(e) => {
+                                                    const val = parseFloat(e.target.value);
+                                                    setCashReceived(isNaN(val) ? 0 : val);
+                                                }}
+                                                placeholder="0"
+                                                className="num text-xl font-bold bg-transparent text-right outline-none w-28 text-[var(--fg)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                            />
+                                        </div>
                                     </div>
 
                                     {/* Numeric cash buttons */}
-                                    <div className="grid grid-cols-3 gap-2">
-                                        {['100', '200', '500', '1000'].map(val => (
+                                    <div className="grid grid-cols-4 gap-1.5">
+                                        {['1', '5', '10', '20', '50', '100', '200', '500', '1000'].map(val => (
                                             <button
                                                 key={val}
                                                 type="button"
                                                 onClick={() => handleQuickCash(val)}
-                                                className="min-h-[54px] border border-[var(--border)] rounded-[15px] bg-[var(--surface)] text-[var(--fg)] font-black text-xs cursor-pointer hover:bg-[var(--fg-soft)]"
+                                                className="min-h-[42px] border border-[var(--border)] rounded-[12px] bg-[var(--surface)] text-[var(--fg)] font-black text-xs cursor-pointer hover:bg-[var(--fg-soft)] active:scale-95 transition-all flex items-center justify-center"
                                             >
-                                                {val}
+                                                +{val}
                                             </button>
                                         ))}
                                         <button
                                             type="button"
                                             onClick={() => handleQuickCash('exact')}
-                                            className="min-h-[54px] border border-[var(--border)] rounded-[15px] bg-[var(--surface)] text-[var(--fg)] font-black text-xs cursor-pointer hover:bg-[var(--fg-soft)]"
+                                            className="min-h-[42px] border border-[var(--border)] rounded-[12px] bg-[var(--surface)] text-[var(--fg)] font-black text-xs cursor-pointer hover:bg-[var(--fg-soft)] active:scale-95 transition-all flex items-center justify-center"
                                         >
                                             Exact
                                         </button>
                                         <button
                                             type="button"
                                             onClick={() => handleQuickCash('clear')}
-                                            className="min-h-[54px] border border-[var(--border)] rounded-[15px] bg-[var(--surface)] text-[var(--fg)] font-black text-xs cursor-pointer hover:bg-[var(--fg-soft)]"
+                                            className="min-h-[42px] border border-[color-mix(in_oklch,var(--danger)_30%,var(--border))] rounded-[12px] bg-[color-mix(in_oklch,var(--danger)_8%,var(--surface))] text-[var(--danger)] font-black text-xs cursor-pointer hover:bg-[color-mix(in_oklch,var(--danger)_12%,var(--surface))] active:scale-95 transition-all flex items-center justify-center col-span-2"
                                         >
                                             Clear
                                         </button>
@@ -524,7 +539,7 @@ export default function POSPage() {
                                     disabled={cart.length === 0 || isSubmittingOrder || (paymentMethod === 'cash' && cashReceived < total)}
                                     className="w-full min-h-[58px] rounded-2xl border border-[var(--accent)] bg-[var(--accent)] text-[var(--surface)] text-sm font-extrabold hover:opacity-90 disabled:opacity-40 transition-all cursor-pointer flex items-center justify-center gap-1.5"
                                 >
-                                    {isSubmittingOrder ? 'Processing...' : 'Send to barista queue'}
+                                    {isSubmittingOrder ? 'Processing...' : 'Send order to barista'}
                                 </button>
                             </div>
                         </aside>
@@ -539,7 +554,7 @@ export default function POSPage() {
                         <div className="p-6 border-b border-[var(--border)] flex justify-between items-center">
                             <div>
                                 <h3 className="font-display font-bold text-lg text-[var(--fg)]">{customizingProduct.name}</h3>
-                                <p className="text-[10px] text-[var(--muted)]">Customize drink options and pricing impacts</p>
+                                <p className="text-[10px] text-[var(--muted)]">Choose size, milk, extras, and notes</p>
                             </div>
                             <button
                                 onClick={() => setCustomizingProduct(null)}
@@ -703,13 +718,13 @@ export default function POSPage() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {completedOrder.items.map((item: any, i: number) => (
+                                    {completedOrder.items.map((item, i) => (
                                         <tr key={i} className="align-top">
                                             <td className="py-1">
                                                 <div>{item.name}</div>
                                                 {item.customizations?.length > 0 && (
                                                     <div className="text-[8px] text-zinc-500 leading-tight">
-                                                        {item.customizations.map((c: any) => c.name).join(', ')}
+                                                        {item.customizations.map(c => c.name).join(', ')}
                                                     </div>
                                                 )}
                                             </td>
@@ -741,11 +756,11 @@ export default function POSPage() {
                                 <div className="space-y-1 text-[10px] border-t border-dashed border-zinc-300 pt-2 text-zinc-600">
                                     <div className="flex justify-between">
                                         <span>Amount Tendered</span>
-                                        <span>{formatCurrency(completedOrder.payment_details.amount_tendered)}</span>
+                                        <span>{formatCurrency(completedOrder.payment_details.amount_tendered ?? 0)}</span>
                                     </div>
                                     <div className="flex justify-between text-black font-bold">
                                         <span>Change Returned</span>
-                                        <span>{formatCurrency(completedOrder.payment_details.change_returned)}</span>
+                                        <span>{formatCurrency(completedOrder.payment_details.change_returned ?? 0)}</span>
                                     </div>
                                 </div>
                             )}

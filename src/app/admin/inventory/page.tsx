@@ -64,7 +64,7 @@ export default function AdminInventoryPage() {
         const checkSession = async () => {
             const res = await fetch('/api/auth/session');
             const data = await res.json();
-            if (res.ok && data.authenticated && ['admin', 'manager'].includes(data.user.role)) {
+            if (res.ok && data.authenticated) {
                 setUser(data.user);
             } else {
                 router.push('/login');

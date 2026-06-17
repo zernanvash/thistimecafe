@@ -21,9 +21,13 @@ export default function SidebarRail({ active, userRole }: SidebarRailProps) {
     return (
         <aside className="w-28 bg-[color-mix(in_oklch,var(--fg)_4%,var(--surface))] border-r border-[var(--border)] p-4.5 flex flex-col gap-3 shrink-0 select-none">
             {/* Brand Mark */}
-            <div className="h-18 grid place-items-center border border-[var(--border)] rounded-[20px] bg-[var(--surface)] font-display font-bold text-3xl text-[var(--accent)]">
+            <button
+                onClick={() => router.push('/')}
+                className="h-18 grid place-items-center border border-[var(--border)] rounded-[20px] bg-[var(--surface)] font-display font-bold text-3xl text-[var(--accent)] cursor-pointer hover:border-[var(--accent)] active:scale-95 transition-all w-full"
+                aria-label="Home page"
+            >
                 T
-            </div>
+            </button>
 
             {/* Nav Rail Buttons */}
             <button

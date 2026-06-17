@@ -364,6 +364,18 @@ const mongoDbInstance: DBInstance = {
 
             console.log('MongoDB Seeding Complete!');
         }
+    },
+    async wipeDatabase() {
+        if (client) {
+            const collections = await db.listCollections().toArray();
+            for (const col of collections) {
+                await db.collection(col.name).drop();
+            }
+            const cli = client;
+            client = null as any;
+            await cli.close();
+        }
+        await this.initialize();
     }
 };
 

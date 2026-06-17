@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
     try {
         await ensureDb();
         const session = await getSession(req);
-        if (!session || !['admin', 'manager'].includes(session.role)) {
+        if (!session) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     try {
         await ensureDb();
         const session = await getSession(req);
-        if (!session || !['admin', 'manager'].includes(session.role)) {
+        if (!session) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 

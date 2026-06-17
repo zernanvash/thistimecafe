@@ -23,41 +23,25 @@ export async function proxy(request: NextRequest) {
         }
         return NextResponse.redirect(new URL('/login', request.url));
     }
-
     // 2. If logged in and trying to access the login page
     if (session && isAuthPage) {
-        if (session.role === 'barista') {
-            return NextResponse.redirect(new URL('/kds', request.url));
-        }
-        return NextResponse.redirect(new URL('/pos', request.url));
+        return NextResponse.redirect(new URL('/', request.url));
     }
 
     // 3. Role-based authorization
     if (session) {
-        // POS access: admin, manager, cashier
-        if (isPOSPath && !['admin', 'manager', 'cashier'].includes(session.role)) {
-            return NextResponse.redirect(new URL('/kds', request.url));
-        }
-
-        // KDS access: admin, manager, barista
-        if (isKDSPath && !['admin', 'manager', 'barista'].includes(session.role)) {
-            return NextResponse.redirect(new URL('/pos', request.url));
-        }
-
-        // Admin paths: admin, manager
-        if (isAdminPath && !['admin', 'manager'].includes(session.role)) {
-            return NextResponse.redirect(new URL('/pos', request.url));
-        }
-
-        // Admin API endpoints: admin, manager
-        if (isApiPath && pathname.startsWith('/api/admin') && !['admin', 'manager'].includes(session.role)) {
-            return new NextResponse(
-                JSON.stringify({ error: 'Forbidden. Admin privileges required.' }),
-                { status: 403, headers: { 'content-type': 'application/json' } }
-            );
+        // Dev console paths require admin or manager credentials
+        const isDevPath = pathname.startsWith('/admin/dev') || pathname.startsWith('/api/admin/dev');
+        if (isDevPath && !['admin', 'manager'].includes(session.role)) {
+            if (pathname.startsWith('/api/')) {
+                return new NextResponse(
+                    JSON.stringify({ error: 'Forbidden. Developer/Admin privileges required.' }),
+                    { status: 403, headers: { 'content-type': 'application/json' } }
+                );
+            }
+            return NextResponse.redirect(new URL('/', request.url));
         }
     }
-
     return NextResponse.next();
 }
 

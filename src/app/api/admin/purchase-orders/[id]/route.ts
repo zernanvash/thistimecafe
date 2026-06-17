@@ -12,7 +12,7 @@ export async function PATCH(
         const { id } = await context.params;
 
         const session = await getSession(req);
-        if (!session || !['admin', 'manager'].includes(session.role)) {
+        if (!session) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 

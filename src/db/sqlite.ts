@@ -536,6 +536,21 @@ const sqliteDbInstance: DBInstance = {
 
             console.log('SQLite Seeding Complete!');
         }
+    },
+    async wipeDatabase() {
+        if (connection) {
+            connection.exec(`
+                DROP TABLE IF EXISTS purchase_orders;
+                DROP TABLE IF EXISTS orders;
+                DROP TABLE IF EXISTS ingredients;
+                DROP TABLE IF EXISTS products;
+                DROP TABLE IF EXISTS users;
+            `);
+            const conn = connection;
+            connection = null as any;
+            conn.close();
+        }
+        await this.initialize();
     }
 };
 

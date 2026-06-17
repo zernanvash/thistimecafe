@@ -52,6 +52,7 @@ export interface DBInstance {
     orders: OrderRepository;
     purchaseOrders: PurchaseOrderRepository;
     initialize(): Promise<void>;
+    wipeDatabase(): Promise<void>;
 }
 
 // Select driver based on environment variables

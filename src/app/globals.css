@@ -19,8 +19,8 @@
 }
 
 @theme inline {
-  --font-sans: var(--font-lora), "Iowan Old Style", "Charter", Georgia, serif;
-  --font-display: var(--font-lora), "Iowan Old Style", "Charter", Georgia, serif;
+  --font-sans: Arial, Helvetica, sans-serif;
+  --font-display: Arial, Helvetica, sans-serif;
   --color-bg: var(--bg);
   --color-surface: var(--surface);
   --color-fg: var(--fg);

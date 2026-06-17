@@ -19,7 +19,7 @@
 }
 
 @theme inline {
-  --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-sans: var(--font-lora), "Iowan Old Style", "Charter", Georgia, serif;
   --font-display: var(--font-lora), "Iowan Old Style", "Charter", Georgia, serif;
   --color-bg: var(--bg);
   --color-surface: var(--surface);

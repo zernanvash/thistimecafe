@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coffee Shop POS & Inventory Requirements Questionnaire</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #8B5A2B;
+            --primary-hover: #704822;
+            --primary-light: #FDF8F5;
+            --text-dark: #2C2C2C;
+            --text-muted: #666666;
+            --border-color: #E2E8F0;
+            --bg-body: #F7FAFC;
+            --bg-card: #FFFFFF;
+            --radius-md: 10px;
+            --radius-lg: 16px;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --primary: #D2B48C;
+                --primary-hover: #C19A6B;
+                --primary-light: #2A2421;
+                --text-dark: #F7FAFC;
+                --text-muted: #A0AEC0;
+                --border-color: #3A3A3A;
+                --bg-body: #12100E;
+                --bg-card: #1C1816;
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-dark);
+            line-height: 1.6;
+            padding: 40px 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            max-width: 900px;
+            width: 100%;
+        }
+
+        .no-print-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            background: var(--bg-card);
+            padding: 16px 24px;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border-color);
+        }
+
+        .brand-pill {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 700;
+            color: var(--primary);
+            font-size: 1.25rem;
+        }
+
+        .btn-print {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--primary);
+            color: #FFFFFF;
+            border: none;
+            padding: 10px 24px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            border-radius: 30px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(139, 90, 43, 0.2);
+        }
+
+        .btn-print:hover {
+            background-color: var(--primary-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(139, 90, 43, 0.3);
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            background: var(--bg-card);
+            padding: 40px;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border-color);
+            position: relative;
+            overflow: hidden;
+        }
+
+        header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: linear-gradient(90deg, var(--primary) 0%, var(--primary-hover) 100%);
+        }
+
+        .form-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: var(--text-dark);
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+
+        .form-subtitle {
+            font-size: 1.1rem;
+            color: var(--text-muted);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .section-card {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            padding: 32px;
+            margin-bottom: 32px;
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border-color);
+            position: relative;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 24px;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 12px;
+        }
+
+        .section-icon {
+            color: var(--primary);
+            flex-shrink: 0;
+        }
+
+        .section-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--text-dark);
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .grid-2, .grid-3 {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        label {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: var(--text-dark);
+        }
+
+        .input-text, .textarea, .select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1.5px solid var(--border-color);
+            background-color: var(--bg-body);
+            color: var(--text-dark);
+            border-radius: var(--radius-md);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.95rem;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .input-text:focus, .textarea:focus, .select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(139, 90, 43, 0.15);
+        }
+
+        .textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 8px;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            font-weight: 500;
+            font-size: 0.95rem;
+            cursor: pointer;
+        }
+
+        .checkbox-label input[type="checkbox"] {
+            margin-top: 4px;
+            width: 18px;
+            height: 18px;
+            accent-color: var(--primary);
+            cursor: pointer;
+        }
+
+        .checkbox-desc {
+            display: block;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-weight: 400;
+            margin-top: 2px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            background-color: var(--bg-body);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+        }
+
+        th, td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1.5px solid var(--border-color);
+            font-size: 0.9rem;
+        }
+
+        th {
+            background-color: var(--primary-light);
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        td input {
+            border: none;
+            background: transparent;
+            width: 100%;
+            font-family: inherit;
+            font-size: inherit;
+            color: inherit;
+        }
+
+        td input:focus {
+            outline: none;
+        }
+
+        .tip-box {
+            background-color: var(--primary-light);
+            border-left: 4px solid var(--primary);
+            padding: 16px;
+            border-radius: 0 var(--radius-md) var(--radius-md) 0;
+            margin-bottom: 24px;
+            font-size: 0.9rem;
+            color: var(--text-dark);
+        }
+
+        /* Printable optimization rules */
+        @media print {
+            body {
+                background-color: #FFFFFF;
+                color: #000000;
+                padding: 0;
+                font-size: 11pt;
+            }
+
+            .container {
+                max-width: 100%;
+            }
+
+            .no-print-actions {
+                display: none;
+            }
+
+            header {
+                box-shadow: none;
+                border: none;
+                border-bottom: 2px solid #000000;
+                border-radius: 0;
+                padding: 20px 0 10px 0;
+                margin-bottom: 20px;
+            }
+
+            header::before {
+                display: none;
+            }
+
+            .section-card {
+                box-shadow: none;
+                border: none;
+                border-bottom: 1px dashed #CCCCCC;
+                border-radius: 0;
+                padding: 15px 0;
+                margin-bottom: 20px;
+                page-break-inside: avoid;
+            }
+
+            .section-header {
+                border-bottom: 1px solid #000000;
+                padding-bottom: 6px;
+                margin-bottom: 15px;
+            }
+
+            .section-icon {
+                display: none;
+            }
+
+            .section-title {
+                font-size: 14pt;
+                color: #000000;
+            }
+
+            .input-text, .textarea, .select {
+                border: none;
+                border-bottom: 1px solid #777777;
+                background-color: transparent !important;
+                color: #000000;
+                border-radius: 0;
+                padding: 4px 0;
+                font-size: 10pt;
+            }
+
+            .textarea {
+                min-height: 50px;
+            }
+
+            .tip-box {
+                background-color: #F8F9FA;
+                border-left: 3px solid #000000;
+                color: #333333;
+                font-size: 9pt;
+                padding: 8px 12px;
+                margin-bottom: 15px;
+            }
+
+            table {
+                background-color: transparent;
+                border: 1px solid #CCCCCC;
+            }
+
+            th {
+                background-color: #F1F1F1 !important;
+                color: #000000;
+                font-weight: 600;
+                border-bottom: 1px solid #000000;
+            }
+
+            td {
+                border-bottom: 1px solid #CCCCCC;
+            }
+
+            label {
+                color: #000000;
+                font-size: 9pt;
+            }
+
+            .checkbox-label input[type="checkbox"] {
+                border: 1px solid #000000;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Action bar visible only in browser -->
+        <div class="no-print-actions">
+            <div class="brand-pill">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M19 8H21C22.1 8 23 8.9 23 10V16C23 17.1 22.1 18 21 18H19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    <path d="M17 2H3C1.9 2 1 2.9 1 4V18C1 20.2 2.8 22 5 22H13C15.2 22 17 20.2 17 18V2Z" fill="currentColor"/>
+                    <path d="M8 8V12" stroke="#FFF" stroke-width="2" stroke-linecap="round"/>
+                    <path d="M11 8V12" stroke="#FFF" stroke-width="2" stroke-linecap="round"/>
+                    <path d="M5 8V12" stroke="#FFF" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                Coffee POS System
+            </div>
+            <button onclick="window.print()" class="btn-print">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                    <rect x="6" y="14" width="12" height="8"></rect>
+                </svg>
+                Save / Print as PDF
+            </button>
+        </div>
+
+        <header>
+            <h1 class="form-title">Coffee Shop POS & Inventory Configuration</h1>
+            <p class="form-subtitle">Please fill out this form to capture the business requirements, inventory rules, menu structure, and checkout settings for your coffee shop POS project.</p>
+        </header>
+
+        <!-- Section 1: Business Details -->
+        <div class="section-card">
+            <div class="section-header">
+                <svg class="section-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="9" y1="3" x2="9" y2="21"></line>
+                    <line x1="15" y1="3" x2="15" y2="21"></line>
+                    <line x1="3" y1="9" x2="21" y2="9"></line>
+                    <line x1="3" y1="15" x2="21" y2="15"></line>
+                </svg>
+                <h2 class="section-title">1. Business Profile & Branding</h2>
+            </div>
+            <div class="grid-2">
+                <div class="form-group">
+                    <label for="shop-name">Coffee Shop Name</label>
+                    <input type="text" id="shop-name" class="input-text" placeholder="e.g., The Roasted Bean">
+                </div>
+                <div class="form-group">
+                    <label for="owner-name">Owner / Contact Name</label>
+                    <input type="text" id="owner-name" class="input-text" placeholder="e.g., John Doe">
+                </div>
+                <div class="form-group">
+                    <label for="contact-email">Contact Email</label>
+                    <input type="email" id="contact-email" class="input-text" placeholder="e.g., hello@theroastedbean.com">
+                </div>
+                <div class="form-group">
+                    <label for="contact-phone">Contact Phone</label>
+                    <input type="text" id="contact-phone" class="input-text" placeholder="e.g., (123) 456-7890">
+                </div>
+                <div class="form-group">
+                    <label for="shop-currency">Default Currency</label>
+                    <select id="shop-currency" class="select">
+                        <option value="USD">USD ($)</option>
+                        <option value="PHP">PHP (₱)</option>
+                        <option value="EUR">EUR (€)</option>
+                        <option value="GBP">GBP (£)</option>
+                        <option value="AUD">AUD ($)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="tax-rate">Standard Tax Rate (%)</label>
+                    <input type="text" id="tax-rate" class="input-text" placeholder="e.g., 12% Vat, 8% state tax">
+                </div>
+                <div class="form-group full-width">
+                    <label for="receipt-footer">Receipt Footer Message</label>
+                    <textarea id="receipt-footer" class="textarea" placeholder="e.g., Thank you for supporting local business! Follow us on Instagram @RoastedBean"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 2: Store Layout & Operation -->
+        <div class="section-card">
+            <div class="section-header">
+                <svg class="section-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                </svg>
+                <h2 class="section-title">2. Store Operations</h2>
+            </div>
+            <div class="tip-box">
+                This helps us optimize the interface layouts for tablet touch-targets and ensure the database handles active concurrent orders efficiently.
+            </div>
+            <div class="grid-3">
+                <div class="form-group">
+                    <label for="num-tablets">Number of active tablet screens</label>
+                    <input type="number" id="num-tablets" class="input-text" min="1" placeholder="e.g., 2">
+                </div>
+                <div class="form-group">
+                    <label for="avg-daily-trx">Est. Daily Transactions</label>
+                    <input type="text" id="avg-daily-trx" class="input-text" placeholder="e.g., 150-300">
+                </div>
+                <div class="form-group">
+                    <label for="dining-options">Order Types Offered</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" checked> Dine-in / Table Service
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" checked> Takeout / To-Go
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox"> Delivery Integration
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 3: Menu & Variations -->
+        <div class="section-card">
+            <div class="section-header">
+                <svg class="section-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                </svg>
+                <h2 class="section-title">3. Menu Architecture & Pricing</h2>
+            </div>
+            <div class="form-group">
+                <label>Typical Product Categories (Check all that apply)</label>
+                <div class="grid-3 checkbox-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" checked> Espresso / Hot Coffee
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" checked> Cold Brew / Iced Coffee
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" checked> Non-Coffee (Tea, Matcha)
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" checked> Frappes & Blended Drinks
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" checked> Pastries & Bakery Items
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox"> Retail Goods (Beans, Mugs)
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-top: 24px;">
+                <label>Define Variations and Customizations Required</label>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Drink Customization Type</th>
+                            <th>Common Options (Examples)</th>
+                            <th>Affects Price? (Yes/No)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Sizes</strong></td>
+                            <td><input type="text" value="Small (8oz), Medium (12oz), Large (16oz)" disabled></td>
+                            <td><input type="text" value="Yes (+ $0.50 / $1.00)" disabled></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Milk Selection</strong></td>
+                            <td><input type="text" placeholder="Whole Milk, Oat Milk, Almond Milk, Soy Milk"></td>
+                            <td><input type="text" placeholder="Yes (+ $0.70 for Oat/Almond)"></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Sweeteners / Syrups</strong></td>
+                            <td><input type="text" placeholder="Vanilla, Caramel, Hazelnut, Sugar-Free Vanilla"></td>
+                            <td><input type="text" placeholder="Yes (+ $0.50 per pump)"></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Espresso Additions</strong></td>
+                            <td><input type="text" placeholder="Extra Shot, Decaf, Ristretto"></td>
+                            <td><input type="text" placeholder="Yes (+ $1.00 per shot)"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Section 4: Inventory & Stock Control -->
+        <div class="section-card">
+            <div class="section-header">
+                <svg class="section-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                    <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                    <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                </svg>
+                <h2 class="section-title">4. Inventory & Stock Control</h2>
+            </div>
+            <div class="tip-box">
+                To manage ingredient costs, the system can automatically deduct raw ingredients (beans, milk, syrups, cups) when a drink is sold.
+            </div>
+            <div class="checkbox-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" checked> <strong>Track Stock Levels of Completed Items</strong>
+                    <span class="checkbox-desc">Deduct pre-packaged items like pastries, canned drinks, or coffee bags directly (e.g. 1 Chocolate Croissant sold = 1 deducted from croissants).</span>
+                </label>
+                <label class="checkbox-label" style="margin-top: 8px;">
+                    <input type="checkbox" checked> <strong>Raw Ingredient Recipes (Decomposition)</strong>
+                    <span class="checkbox-desc">Deduct raw items by volume/weight. (e.g., 1 Latte = 18g espresso beans, 250ml milk, 1 paper cup, 1 lid).</span>
+                </label>
+                <label class="checkbox-label" style="margin-top: 8px;">
+                    <input type="checkbox" checked> <strong>Low Stock Threshold Alerts</strong>
+                    <span class="checkbox-desc">Visual warnings and email alerts when critical items (e.g., Espresso Blend) fall below set kilograms or units.</span>
+                </label>
+            </div>
+            <div class="form-group" style="margin-top: 20px;">
+                <label for="supplier-mgt">Do you need Supplier Purchase Order management in the system?</label>
+                <select id="supplier-mgt" class="select">
+                    <option value="no">No, we manage purchase orders externally.</option>
+                    <option value="yes-basic">Yes, basic PO tracking (Supplier list, ordered quantity, received quantity).</option>
+                    <option value="yes-advanced">Yes, advanced PO tracking (Cost inflation analysis, automated reordering).</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Section 5: Checkout & Payments -->
+        <div class="section-card">
+            <div class="section-header">
+                <svg class="section-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                    <line x1="1" y1="10" x2="23" y2="10"></line>
+                </svg>
+                <h2 class="section-title">5. Checkout Flow & Payments</h2>
+            </div>
+            <div class="grid-2">
+                <div class="form-group">
+                    <label>Accepted Payment Methods</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" checked> Cash (with quick change calculator)
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" checked> External Card Terminal (manual amount entry)
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" checked> Mobile/QR Payments (Gcash, Maya, Venmo, etc.)
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox"> Integrated Payment Terminal (e.g., Stripe, Adyen)
+                        </label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Discounts & Promotions Supported</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" checked> Percentage Discount (e.g., 10% Off)
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" checked> Flat Amount Discount (e.g., $1.00 Off)
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" checked> Custom Loyalty Points / Reward System
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox"> "Buy 1 Get 1" or Combo Offers
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 6: User Roles -->
+        <div class="section-card">
+            <div class="section-header">
+                <svg class="section-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+                <h2 class="section-title">6. User Roles & Access Control</h2>
+            </div>
+            <div class="form-group">
+                <label>Expected Roles & Permissions</label>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Role</th>
+                            <th>Default Permissions Needed</th>
+                            <th>Passcode Sign-in Required?</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Cashier</strong></td>
+                            <td>Take orders, select payment, print receipts, open drawer. Cannot edit inventory.</td>
+                            <td><input type="text" placeholder="Yes, 4-digit code (Quick Swap)"></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Barista</strong></td>
+                            <td>View order queue (KDS - Kitchen Display Screen), mark orders as "Prepared/Ready".</td>
+                            <td><input type="text" placeholder="Yes, 4-digit code"></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Manager</strong></td>
+                            <td>Manage cash float, process voids/refunds, view daily register summaries.</td>
+                            <td><input type="text" placeholder="Yes, 4-digit code"></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Admin / Owner</strong></td>
+                            <td>Full access: Edit menu & pricing, view profit reports, modify inventory, set settings.</td>
+                            <td><input type="text" placeholder="Yes, email + password"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Section 7: Hardware & Infrastructure -->
+        <div class="section-card">
+            <div class="section-header">
+                <svg class="section-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+                    <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+                    <line x1="6" y1="6" x2="6.01" y2="6"></line>
+                    <line x1="6" y1="18" x2="6.01" y2="18"></line>
+                </svg>
+                <h2 class="section-title">7. Hardware & Deployment</h2>
+            </div>
+            <div class="grid-2">
+                <div class="form-group">
+                    <label for="tablet-model">Primary POS Tablet Device</label>
+                    <input type="text" id="tablet-model" class="input-text" placeholder="e.g., iPad Pro 11, Samsung Galaxy Tab S9, etc.">
+                </div>
+                <div class="form-group">
+                    <label for="printer-type">Receipt Printer Type</label>
+                    <select id="printer-type" class="select">
+                        <option value="none">No printing (E-receipt only via email/SMS)</option>
+                        <option value="network">Ethernet/LAN Receipt Printer (ESC/POS protocol)</option>
+                        <option value="bluetooth">Bluetooth Thermal Printer</option>
+                        <option value="system">Standard Browser Printing (AirPrint/system dialog)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="cash-drawer">Cash Drawer Trigger</label>
+                    <select id="cash-drawer" class="select">
+                        <option value="manual">Manual Key Lock open only</option>
+                        <option value="printer">Printer-Driven RJ11/RJ12 Kick (opens automatically on receipt print)</option>
+                        <option value="none">No physical cash drawer</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="internet-connection">Internet Stability & Offline Support</label>
+                    <select id="internet-connection" class="select">
+                        <option value="always-on">Always online (Good Wi-Fi, internet rarely drops)</option>
+                        <option value="intermittent">Intermittent (Drops sometimes, offline queue buffering required)</option>
+                        <option value="offline-first">Offline First (Entire POS runs locally, syncs to cloud on demand)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 8: Agreement -->
+        <div class="section-card" style="border-bottom: none; margin-bottom: 0;">
+            <div class="grid-2" style="margin-top: 20px;">
+                <div class="form-group" style="border-top: 1px solid var(--text-dark); padding-top: 10px;">
+                    <label style="text-align: center;">Completed By (Signature)</label>
+                    <div style="height: 60px;"></div>
+                </div>
+                <div class="form-group" style="border-top: 1px solid var(--text-dark); padding-top: 10px;">
+                    <label style="text-align: center;">Date</label>
+                    <div style="height: 60px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

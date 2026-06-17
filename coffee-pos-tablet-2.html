@@ -1,0 +1,862 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Neighborhood Cafe POS Tablet Prototype</title>
+  <style>
+    :root {
+      --bg: oklch(97% 0.018 82);
+      --surface: oklch(100% 0.004 82);
+      --fg: oklch(22% 0.026 65);
+      --muted: oklch(48% 0.02 72);
+      --border: oklch(88% 0.018 82);
+      --accent: oklch(55% 0.13 48);
+      --accent-soft: color-mix(in oklch, var(--accent) 12%, transparent);
+      --fg-soft: color-mix(in oklch, var(--fg) 6%, transparent);
+      --ok: oklch(58% 0.12 148);
+      --warn: oklch(68% 0.15 70);
+      --danger: oklch(58% 0.18 34);
+      --sage: oklch(70% 0.075 148);
+      --font-display: 'Iowan Old Style', 'Charter', Georgia, 'Times New Roman', serif;
+      --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      --font-mono: ui-monospace, 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+      --radius: 18px;
+      --radius-sm: 12px;
+      --shadow: 0 20px 60px color-mix(in oklch, var(--fg) 13%, transparent);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 12% 8%, color-mix(in oklch, var(--sage) 22%, transparent), transparent 28%),
+        linear-gradient(135deg, var(--bg), color-mix(in oklch, var(--surface) 82%, var(--accent-soft)));
+      color: var(--fg);
+      font-family: var(--font-body);
+      line-height: 1.45;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+    }
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+    h1, h2, h3 { font-family: var(--font-display); margin: 0; letter-spacing: 0; text-wrap: balance; }
+    p { margin: 0; text-wrap: pretty; }
+    .num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+    .tablet-stage {
+      width: min(1180px, calc(100vw - 32px));
+      min-height: min(820px, calc(100vh - 32px));
+      margin: 16px auto;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 34px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      display: grid;
+      grid-template-columns: 112px 1fr;
+    }
+
+    .rail {
+      background: color-mix(in oklch, var(--fg) 4%, var(--surface));
+      border-right: 1px solid var(--border);
+      padding: 18px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .brand-mark {
+      height: 72px;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      background: var(--surface);
+      font-family: var(--font-display);
+      font-size: 30px;
+      color: var(--accent);
+    }
+    .nav-btn {
+      min-height: 72px;
+      border: 1px solid transparent;
+      border-radius: 18px;
+      background: transparent;
+      color: var(--muted);
+      display: grid;
+      place-items: center;
+      gap: 4px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .nav-btn svg { width: 24px; height: 24px; stroke-width: 1.8; }
+    .nav-btn.active {
+      background: var(--accent-soft);
+      color: var(--accent);
+      border-color: color-mix(in oklch, var(--accent) 24%, var(--border));
+    }
+    .shift-card {
+      margin-top: auto;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 10px;
+      color: var(--muted);
+      background: var(--surface);
+      font-size: 12px;
+    }
+    .shift-card strong { display: block; color: var(--fg); font-size: 13px; margin-top: 2px; }
+
+    .app {
+      display: grid;
+      grid-template-rows: 86px 1fr;
+      min-width: 0;
+    }
+    .topbar {
+      border-bottom: 1px solid var(--border);
+      padding: 18px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+    }
+    .topbar h1 { font-size: 32px; line-height: 1; }
+    .topbar p { color: var(--muted); font-size: 14px; margin-top: 4px; }
+    .status-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+    .pill {
+      min-height: 40px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 12px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      color: var(--muted);
+      background: var(--surface);
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--ok); }
+
+    .screen { display: none; min-height: 0; }
+    .screen.active { display: grid; }
+
+    .login-screen {
+      grid-template-columns: 1.05fr 0.95fr;
+      padding: 34px;
+      gap: 28px;
+      align-items: stretch;
+    }
+    .welcome-panel, .pin-panel, .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+    }
+    .welcome-panel {
+      background:
+        linear-gradient(145deg, color-mix(in oklch, var(--accent) 14%, var(--surface)), var(--surface) 54%),
+        var(--surface);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .eyebrow {
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 800;
+      margin-bottom: 12px;
+    }
+    .welcome-panel h2 { font-size: 68px; line-height: 0.98; max-width: 7ch; }
+    .role-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 34px; }
+    .role-tile {
+      min-height: 96px;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+      background: color-mix(in oklch, var(--surface) 84%, var(--bg));
+    }
+    .role-tile strong { display: block; font-size: 17px; }
+    .role-tile span { color: var(--muted); font-size: 13px; }
+    .pin-panel { display: grid; grid-template-rows: auto 1fr auto; gap: 18px; }
+    .pin-display {
+      min-height: 74px;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      background: color-mix(in oklch, var(--bg) 58%, var(--surface));
+    }
+    .pin-dot {
+      width: 16px;
+      height: 16px;
+      border: 2px solid var(--border);
+      border-radius: 50%;
+      background: transparent;
+    }
+    .pin-dot.filled { background: var(--fg); border-color: var(--fg); }
+    .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .key {
+      min-height: 76px;
+      border-radius: 18px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--fg);
+      font-size: 28px;
+      font-weight: 800;
+    }
+    .key.secondary { color: var(--muted); font-size: 16px; }
+    .primary-btn, .quiet-btn {
+      min-height: 58px;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      font-weight: 800;
+      padding: 0 18px;
+    }
+    .primary-btn {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: var(--surface);
+    }
+    .quiet-btn { background: var(--surface); color: var(--fg); }
+
+    .pos-screen {
+      grid-template-columns: 1fr 360px;
+      gap: 0;
+      min-height: 0;
+    }
+    .catalog {
+      padding: 20px 22px;
+      min-width: 0;
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+      gap: 16px;
+      overflow: hidden;
+    }
+    .category-row { display: flex; gap: 10px; overflow: auto; padding-bottom: 2px; }
+    .category {
+      min-height: 54px;
+      min-width: 126px;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: var(--surface);
+      color: var(--muted);
+      font-weight: 800;
+    }
+    .category.active {
+      color: var(--fg);
+      border-color: color-mix(in oklch, var(--accent) 30%, var(--border));
+      background: var(--accent-soft);
+    }
+    .search-row { display: grid; grid-template-columns: 1fr 148px; gap: 12px; }
+    .search-row input {
+      min-height: 58px;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      padding: 0 18px;
+      background: var(--surface);
+      color: var(--fg);
+      font-weight: 700;
+    }
+    .menu-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+    .item-card {
+      min-height: 150px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      background: var(--surface);
+      padding: 16px;
+      text-align: left;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .item-card:active { transform: translateY(1px); }
+    .item-card strong { display: block; font-size: 18px; }
+    .item-card small { color: var(--muted); display: block; margin-top: 4px; line-height: 1.35; }
+    .price-line { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; }
+    .price-line span { color: var(--accent); font-weight: 900; }
+    .stock-chip {
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 4px 8px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+    .cart {
+      border-left: 1px solid var(--border);
+      background: color-mix(in oklch, var(--bg) 52%, var(--surface));
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      min-height: 0;
+    }
+    .cart-head, .cart-total { padding: 18px; border-bottom: 1px solid var(--border); }
+    .cart-head h2, .panel h2 { font-size: 28px; }
+    .cart-list { overflow: auto; padding: 10px 18px; }
+    .cart-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      padding: 13px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .cart-row strong { display: block; }
+    .cart-row small { color: var(--muted); }
+    .qty-controls { display: flex; align-items: center; gap: 8px; }
+    .qty-controls button {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      font-size: 20px;
+      font-weight: 900;
+    }
+    .cart-total { border-top: 1px solid var(--border); border-bottom: 0; display: grid; gap: 12px; }
+    .total-line { display: flex; justify-content: space-between; color: var(--muted); }
+    .total-line.grand { color: var(--fg); font-size: 24px; font-weight: 900; }
+    .cash-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .cash-grid button {
+      min-height: 54px;
+      border: 1px solid var(--border);
+      border-radius: 15px;
+      background: var(--surface);
+      font-weight: 900;
+    }
+    .cash-readout {
+      min-height: 58px;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+      background: var(--surface);
+    }
+    .cash-readout strong { font-size: 22px; }
+    .change-positive { color: var(--ok); }
+    .change-short { color: var(--danger); }
+
+    .dashboard-screen, .inventory-screen {
+      padding: 20px 22px;
+      grid-template-rows: auto 1fr;
+      gap: 16px;
+      overflow: hidden;
+    }
+    .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+    .metric {
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 18px;
+      background: var(--surface);
+    }
+    .metric span { color: var(--muted); font-size: 13px; font-weight: 800; }
+    .metric strong { display: block; font-size: 30px; margin-top: 6px; }
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 16px;
+      min-height: 0;
+    }
+    .panel { overflow: hidden; min-height: 0; }
+    .panel-head { display: flex; justify-content: space-between; gap: 12px; align-items: start; margin-bottom: 14px; }
+    .panel-head p { color: var(--muted); font-size: 14px; margin-top: 4px; }
+    .kds-list { display: grid; gap: 12px; overflow: auto; max-height: 520px; padding-right: 3px; }
+    .order-card {
+      border: 2px solid var(--ok);
+      border-radius: 18px;
+      padding: 16px;
+      background: var(--surface);
+      display: grid;
+      gap: 10px;
+    }
+    .order-card.warn { border-color: var(--warn); }
+    .order-card.danger { border-color: var(--danger); animation: urgentPulse 1.6s ease-in-out infinite; }
+    @keyframes urgentPulse {
+      0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklch, var(--danger) 0%, transparent); }
+      50% { box-shadow: 0 0 0 8px color-mix(in oklch, var(--danger) 14%, transparent); }
+    }
+    .order-top { display: flex; justify-content: space-between; align-items: baseline; }
+    .order-top strong { font-size: 19px; }
+    .age { font-weight: 900; }
+    .order-card.ok .age { color: var(--ok); }
+    .order-card.warn .age { color: var(--warn); }
+    .order-card.danger .age { color: var(--danger); }
+    .prep-tags { display: flex; gap: 8px; flex-wrap: wrap; }
+    .prep-tags span {
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 6px 10px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+    .staff-list { display: grid; gap: 12px; }
+    .staff-row {
+      display: grid;
+      grid-template-columns: 44px 1fr auto;
+      gap: 12px;
+      align-items: center;
+      min-height: 64px;
+      border-bottom: 1px solid var(--border);
+    }
+    .avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-weight: 900;
+    }
+    .staff-row small { color: var(--muted); }
+
+    .inventory-layout {
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      gap: 16px;
+      min-height: 0;
+    }
+    .inventory-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 15px;
+    }
+    .inventory-table th, .inventory-table td {
+      padding: 14px 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .inventory-table th {
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .inventory-table tbody tr:hover { background: var(--fg-soft); }
+    .inventory-table .right { text-align: right; font-family: var(--font-mono); }
+    .level {
+      height: 10px;
+      border-radius: 999px;
+      background: color-mix(in oklch, var(--border) 72%, var(--surface));
+      overflow: hidden;
+      min-width: 120px;
+    }
+    .level span { display: block; height: 100%; background: var(--ok); }
+    .level.low span { background: var(--warn); }
+    .level.critical span { background: var(--danger); }
+    .recipe-card {
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 15px;
+      margin-top: 12px;
+      background: color-mix(in oklch, var(--bg) 46%, var(--surface));
+    }
+    .recipe-card h3 { font-size: 20px; }
+    .recipe-card ul { margin: 10px 0 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+    .recipe-card li { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); }
+
+    @media (max-width: 980px) {
+      .tablet-stage { width: 100vw; min-height: 100vh; margin: 0; border-radius: 0; grid-template-columns: 92px 1fr; }
+      .pos-screen, .dashboard-grid, .inventory-layout, .login-screen { grid-template-columns: 1fr; }
+      .cart { border-left: 0; border-top: 1px solid var(--border); }
+      .menu-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .metrics { grid-template-columns: repeat(2, 1fr); }
+      .welcome-panel h2 { font-size: 46px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="tablet-stage">
+    <aside class="rail" aria-label="Cafe POS navigation">
+      <div class="brand-mark" aria-label="Tala Table Coffee">T</div>
+      <button class="nav-btn active" data-target="login" aria-label="Login screen">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M8 11V8a4 4 0 0 1 8 0v3"/><rect x="5" y="11" width="14" height="10" rx="2"/></svg>
+        Login
+      </button>
+      <button class="nav-btn" data-target="pos" aria-label="Order-taking screen">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 6h16M4 12h16M4 18h10"/><path d="M18 16v4M16 18h4"/></svg>
+        Orders
+      </button>
+      <button class="nav-btn" data-target="dashboard" aria-label="Admin dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 13h6V5H4v8Zm10 6h6V5h-6v14ZM4 19h6v-3H4v3Z"/></svg>
+        Admin
+      </button>
+      <button class="nav-btn" data-target="inventory" aria-label="Inventory screen">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 7h16v13H4z"/><path d="M4 7l2-3h12l2 3M9 12h6"/></svg>
+        Stock
+      </button>
+      <div class="shift-card">
+        Shift
+        <strong>Morning</strong>
+        <span class="num">06:30-14:30</span>
+      </div>
+    </aside>
+
+    <main class="app">
+      <header class="topbar">
+        <div>
+          <h1 id="screenTitle">Staff PIN</h1>
+          <p id="screenSubtitle">Large touch login for cashier, barista, manager, and stock roles.</p>
+        </div>
+        <div class="status-row">
+          <span class="pill"><span class="dot"></span>Register online</span>
+          <span class="pill num" id="clock">08:42</span>
+        </div>
+      </header>
+
+      <section class="screen login-screen active" id="login" data-od-id="login-screen">
+        <div class="welcome-panel">
+          <div>
+            <p class="eyebrow">Tala Table Coffee</p>
+            <h2>Open the shift without slowing the line.</h2>
+          </div>
+          <div class="role-grid">
+            <div class="role-tile"><strong>Cashier</strong><span>Orders, payments, refunds</span></div>
+            <div class="role-tile"><strong>Barista</strong><span>KDS, prep queue, ready calls</span></div>
+            <div class="role-tile"><strong>Manager</strong><span>Dashboard, staff, end-of-day</span></div>
+            <div class="role-tile"><strong>Stock</strong><span>Recipe volumes and purchase prep</span></div>
+          </div>
+        </div>
+        <div class="pin-panel">
+          <div>
+            <p class="eyebrow">Secure handoff</p>
+            <h2>Enter staff PIN</h2>
+          </div>
+          <div>
+            <div class="pin-display" aria-label="PIN entry">
+              <span class="pin-dot"></span><span class="pin-dot"></span><span class="pin-dot"></span><span class="pin-dot"></span>
+            </div>
+            <div class="keypad" style="margin-top: 14px;">
+              <button class="key" data-pin="1">1</button><button class="key" data-pin="2">2</button><button class="key" data-pin="3">3</button>
+              <button class="key" data-pin="4">4</button><button class="key" data-pin="5">5</button><button class="key" data-pin="6">6</button>
+              <button class="key" data-pin="7">7</button><button class="key" data-pin="8">8</button><button class="key" data-pin="9">9</button>
+              <button class="key secondary" id="pinClear">Clear</button><button class="key" data-pin="0">0</button><button class="key secondary" id="pinBack">Back</button>
+            </div>
+          </div>
+          <button class="primary-btn" id="unlockBtn">Unlock register</button>
+        </div>
+      </section>
+
+      <section class="screen pos-screen" id="pos" data-od-id="order-taking-screen">
+        <div class="catalog">
+          <div class="category-row" aria-label="Menu categories">
+            <button class="category active" data-category="all">All items</button>
+            <button class="category" data-category="coffee">Coffee</button>
+            <button class="category" data-category="tea">Tea</button>
+            <button class="category" data-category="pastry">Pastry</button>
+            <button class="category" data-category="cold">Cold bar</button>
+          </div>
+          <div class="search-row">
+            <input id="menuSearch" type="search" placeholder="Search menu or ingredient" aria-label="Search menu" />
+            <button class="quiet-btn" id="clearOrder">Clear order</button>
+          </div>
+          <div class="menu-grid" id="menuGrid" aria-label="Menu item grid"></div>
+        </div>
+        <aside class="cart" aria-label="Current order">
+          <div class="cart-head">
+            <p class="eyebrow">Table 04</p>
+            <h2>Current order</h2>
+          </div>
+          <div class="cart-list" id="cartList"></div>
+          <div class="cart-total">
+            <div class="total-line"><span>Subtotal</span><strong class="num" id="subtotal">PHP 0</strong></div>
+            <div class="total-line"><span>Service</span><strong class="num" id="service">PHP 0</strong></div>
+            <div class="total-line grand"><span>Total</span><strong class="num" id="grandTotal">PHP 0</strong></div>
+            <div class="cash-readout"><span>Cash received</span><strong class="num" id="cashValue">PHP 0</strong></div>
+            <div class="cash-grid" aria-label="Quick cash selectors">
+              <button data-cash="100">100</button><button data-cash="200">200</button><button data-cash="500">500</button>
+              <button data-cash="1000">1000</button><button data-cash="exact">Exact</button><button data-cash="clear">Clear</button>
+            </div>
+            <div class="cash-readout"><span>Change</span><strong class="num change-short" id="changeValue">PHP 0 short</strong></div>
+            <button class="primary-btn">Send to barista queue</button>
+          </div>
+        </aside>
+      </section>
+
+      <section class="screen dashboard-screen" id="dashboard" data-od-id="admin-dashboard-screen">
+        <div class="metrics">
+          <div class="metric"><span>Open orders</span><strong class="num">12</strong></div>
+          <div class="metric"><span>Waiting over 7 min</span><strong class="num">3</strong></div>
+          <div class="metric"><span>Cash drawer</span><strong class="num">PHP 8,420</strong></div>
+          <div class="metric"><span>Low ingredients</span><strong class="num">4</strong></div>
+        </div>
+        <div class="dashboard-grid">
+          <div class="panel">
+            <div class="panel-head">
+              <div><p class="eyebrow">KDS aging</p><h2>Barista queue</h2><p>Border state moves from green to orange to pulsing red as prep time drags.</p></div>
+              <button class="quiet-btn" id="ageTick">Advance 1 min</button>
+            </div>
+            <div class="kds-list" id="kdsList"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head">
+              <div><p class="eyebrow">Shift control</p><h2>Staff floor</h2><p>All roles see only the actions needed for the current rush.</p></div>
+            </div>
+            <div class="staff-list">
+              <div class="staff-row"><div class="avatar">MA</div><div><strong>Mara</strong><br><small>Cashier - Register A</small></div><span class="pill">Active</span></div>
+              <div class="staff-row"><div class="avatar">JO</div><div><strong>Jonas</strong><br><small>Barista - Espresso</small></div><span class="pill">8 orders</span></div>
+              <div class="staff-row"><div class="avatar">LE</div><div><strong>Lei</strong><br><small>Stock - Milk prep</small></div><span class="pill">Restock</span></div>
+              <div class="staff-row"><div class="avatar">RY</div><div><strong>Ryan</strong><br><small>Manager - Floor</small></div><span class="pill">Override</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen inventory-screen" id="inventory" data-od-id="inventory-stock-screen">
+        <div class="search-row">
+          <input id="inventorySearch" type="search" placeholder="Search ingredient, unit, or recipe" aria-label="Search inventory" />
+          <button class="quiet-btn" id="lowOnly">Low stock</button>
+        </div>
+        <div class="inventory-layout">
+          <div class="panel" style="overflow:auto;">
+            <div class="panel-head">
+              <div><p class="eyebrow">Recipe volumes</p><h2>Ingredient stock</h2><p>Inventory tracks grams and milliliters consumed by each menu item.</p></div>
+            </div>
+            <table class="inventory-table">
+              <thead><tr><th>Ingredient</th><th>Unit</th><th class="right">On hand</th><th>Level</th><th class="right">Reorder</th></tr></thead>
+              <tbody id="inventoryRows"></tbody>
+            </table>
+          </div>
+          <aside class="panel">
+            <div class="panel-head">
+              <div><p class="eyebrow">Decomposition</p><h2>Recipe links</h2><p>Tap-worthy recipe cards show what each sale deducts from stock.</p></div>
+            </div>
+            <div class="recipe-card">
+              <h3>Spanish Latte</h3>
+              <ul>
+                <li><span>Espresso beans</span><strong class="num">18 g</strong></li>
+                <li><span>Fresh milk</span><strong class="num">160 ml</strong></li>
+                <li><span>Condensed milk</span><strong class="num">28 ml</strong></li>
+                <li><span>Ice</span><strong class="num">120 g</strong></li>
+              </ul>
+            </div>
+            <div class="recipe-card">
+              <h3>Butter Croissant</h3>
+              <ul>
+                <li><span>Croissant dough</span><strong class="num">86 g</strong></li>
+                <li><span>Butter sheet</span><strong class="num">18 g</strong></li>
+                <li><span>Egg wash</span><strong class="num">6 ml</strong></li>
+              </ul>
+            </div>
+            <button class="primary-btn" style="width:100%; margin-top: 16px;">Prepare purchase order</button>
+          </aside>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const menuItems = [
+      { name: 'Spanish Latte', category: 'coffee', price: 165, stock: 'Milk 2.8 L', recipe: '18 g beans - 160 ml milk - 28 ml condensed' },
+      { name: 'Americano', category: 'coffee', price: 125, stock: 'Beans 3.4 kg', recipe: '18 g beans - 220 ml water' },
+      { name: 'Cappuccino', category: 'coffee', price: 150, stock: 'Milk 2.8 L', recipe: '18 g beans - 140 ml milk' },
+      { name: 'Cold Brew', category: 'cold', price: 155, stock: 'Batch 4.2 L', recipe: '220 ml cold brew - 120 g ice' },
+      { name: 'Calamansi Iced Tea', category: 'tea', price: 120, stock: 'Tea 2.1 L', recipe: '180 ml tea - 25 ml calamansi - 100 g ice' },
+      { name: 'Matcha Latte', category: 'tea', price: 170, stock: 'Matcha 420 g', recipe: '5 g matcha - 180 ml milk' },
+      { name: 'Butter Croissant', category: 'pastry', price: 115, stock: 'Tray 18 pcs', recipe: '86 g dough - 18 g butter - 6 ml egg wash' },
+      { name: 'Banana Loaf', category: 'pastry', price: 95, stock: 'Tray 12 slices', recipe: '80 g loaf - 12 g glaze' },
+      { name: 'Mocha Frappe', category: 'cold', price: 185, stock: 'Chocolate 0.8 L', recipe: '18 g beans - 150 ml milk - 30 ml chocolate - 160 g ice' }
+    ];
+
+    const kdsOrders = [
+      { id: 'A102', age: 3, items: ['Spanish Latte', 'Butter Croissant'], station: 'Espresso' },
+      { id: 'A103', age: 6, items: ['Cold Brew', 'Banana Loaf'], station: 'Cold bar' },
+      { id: 'A104', age: 9, items: ['Mocha Frappe', 'Matcha Latte'], station: 'Blender' },
+      { id: 'A105', age: 12, items: ['Cappuccino', 'Americano', 'Croissant'], station: 'Espresso' }
+    ];
+
+    const inventory = [
+      { name: 'Espresso beans', unit: 'g', hand: 3400, reorder: 1800, pct: 68 },
+      { name: 'Fresh milk', unit: 'ml', hand: 2800, reorder: 3200, pct: 32 },
+      { name: 'Condensed milk', unit: 'ml', hand: 940, reorder: 900, pct: 46 },
+      { name: 'Ice', unit: 'g', hand: 8400, reorder: 5000, pct: 74 },
+      { name: 'Matcha powder', unit: 'g', hand: 420, reorder: 600, pct: 28 },
+      { name: 'Chocolate sauce', unit: 'ml', hand: 780, reorder: 1000, pct: 24 },
+      { name: 'Croissant dough', unit: 'g', hand: 1548, reorder: 1200, pct: 51 },
+      { name: 'Egg wash', unit: 'ml', hand: 160, reorder: 300, pct: 18 }
+    ];
+
+    const titles = {
+      login: ['Staff PIN', 'Large touch login for cashier, barista, manager, and stock roles.'],
+      pos: ['Order-taking', 'Touch-first menu grid with instant cash calculator and auto-change.'],
+      dashboard: ['Admin dashboard', 'Rush-hour command view with KDS order aging alerts.'],
+      inventory: ['Inventory', 'Recipe-aware ingredient tracking in grams and milliliters.']
+    };
+
+    const cart = new Map();
+    let cash = 0;
+    let selectedCategory = 'all';
+
+    function peso(value) {
+      return 'PHP ' + Math.round(value).toLocaleString('en-PH');
+    }
+
+    function switchScreen(id) {
+      document.querySelectorAll('.screen').forEach(screen => screen.classList.toggle('active', screen.id === id));
+      document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.target === id));
+      document.getElementById('screenTitle').textContent = titles[id][0];
+      document.getElementById('screenSubtitle').textContent = titles[id][1];
+    }
+
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+      btn.addEventListener('click', () => switchScreen(btn.dataset.target));
+    });
+
+    let pin = '';
+    function renderPin() {
+      document.querySelectorAll('.pin-dot').forEach((dot, index) => dot.classList.toggle('filled', index < pin.length));
+    }
+    document.querySelectorAll('[data-pin]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (pin.length < 4) pin += btn.dataset.pin;
+        renderPin();
+      });
+    });
+    document.getElementById('pinClear').addEventListener('click', () => { pin = ''; renderPin(); });
+    document.getElementById('pinBack').addEventListener('click', () => { pin = pin.slice(0, -1); renderPin(); });
+    document.getElementById('unlockBtn').addEventListener('click', () => switchScreen('pos'));
+
+    function renderMenu() {
+      const q = document.getElementById('menuSearch').value.trim().toLowerCase();
+      const grid = document.getElementById('menuGrid');
+      grid.innerHTML = '';
+      menuItems
+        .filter(item => selectedCategory === 'all' || item.category === selectedCategory)
+        .filter(item => !q || `${item.name} ${item.recipe}`.toLowerCase().includes(q))
+        .forEach(item => {
+          const btn = document.createElement('button');
+          btn.className = 'item-card';
+          btn.innerHTML = `<span><strong>${item.name}</strong><small>${item.recipe}</small></span><span class="price-line"><span class="num">${peso(item.price)}</span><em class="stock-chip">${item.stock}</em></span>`;
+          btn.addEventListener('click', () => addToCart(item.name));
+          grid.appendChild(btn);
+        });
+    }
+
+    function addToCart(name) {
+      const item = menuItems.find(entry => entry.name === name);
+      const current = cart.get(name) || { item, qty: 0 };
+      current.qty += 1;
+      cart.set(name, current);
+      renderCart();
+    }
+
+    function renderCart() {
+      const list = document.getElementById('cartList');
+      list.innerHTML = '';
+      let subtotal = 0;
+      cart.forEach(({ item, qty }, name) => {
+        subtotal += item.price * qty;
+        const row = document.createElement('div');
+        row.className = 'cart-row';
+        row.innerHTML = `<div><strong>${name}</strong><small>${item.recipe}</small></div><div class="qty-controls"><button data-minus="${name}">-</button><span class="num">${qty}</span><button data-plus="${name}">+</button></div>`;
+        list.appendChild(row);
+      });
+      if (!cart.size) {
+        list.innerHTML = '<p style="color: var(--muted); padding: 18px 0;">Tap menu items to build the order.</p>';
+      }
+      const service = subtotal ? Math.round(subtotal * 0.05) : 0;
+      const total = subtotal + service;
+      document.getElementById('subtotal').textContent = peso(subtotal);
+      document.getElementById('service').textContent = peso(service);
+      document.getElementById('grandTotal').textContent = peso(total);
+      renderCash(total);
+      document.querySelectorAll('[data-minus]').forEach(btn => btn.addEventListener('click', () => {
+        const row = cart.get(btn.dataset.minus);
+        row.qty -= 1;
+        if (row.qty <= 0) cart.delete(btn.dataset.minus);
+        renderCart();
+      }));
+      document.querySelectorAll('[data-plus]').forEach(btn => btn.addEventListener('click', () => addToCart(btn.dataset.plus)));
+    }
+
+    function renderCash(total) {
+      document.getElementById('cashValue').textContent = peso(cash);
+      const change = cash - total;
+      const el = document.getElementById('changeValue');
+      el.classList.toggle('change-positive', change >= 0 && total > 0);
+      el.classList.toggle('change-short', change < 0 || total === 0);
+      el.textContent = change >= 0 && total > 0 ? peso(change) : `${peso(Math.abs(change))} short`;
+    }
+
+    document.querySelectorAll('[data-cash]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const total = Number(document.getElementById('grandTotal').textContent.replace(/[^0-9]/g, ''));
+        if (btn.dataset.cash === 'clear') cash = 0;
+        else if (btn.dataset.cash === 'exact') cash = total;
+        else cash += Number(btn.dataset.cash);
+        renderCash(total);
+      });
+    });
+    document.getElementById('clearOrder').addEventListener('click', () => { cart.clear(); cash = 0; renderCart(); });
+    document.getElementById('menuSearch').addEventListener('input', renderMenu);
+    document.querySelectorAll('.category').forEach(btn => {
+      btn.addEventListener('click', () => {
+        selectedCategory = btn.dataset.category;
+        document.querySelectorAll('.category').forEach(category => category.classList.toggle('active', category === btn));
+        renderMenu();
+      });
+    });
+
+    function renderKds() {
+      const list = document.getElementById('kdsList');
+      list.innerHTML = '';
+      kdsOrders.forEach(order => {
+        const state = order.age >= 9 ? 'danger' : order.age >= 6 ? 'warn' : 'ok';
+        const card = document.createElement('article');
+        card.className = `order-card ${state}`;
+        card.innerHTML = `<div class="order-top"><strong>${order.id}</strong><span class="age num">${order.age} min</span></div><p>${order.items.join(' - ')}</p><div class="prep-tags"><span>${order.station}</span><span>${state === 'danger' ? 'Needs bump' : state === 'warn' ? 'Watch' : 'On track'}</span></div>`;
+        list.appendChild(card);
+      });
+    }
+    document.getElementById('ageTick').addEventListener('click', () => { kdsOrders.forEach(order => order.age += 1); renderKds(); });
+
+    let lowOnly = false;
+    function renderInventory() {
+      const q = document.getElementById('inventorySearch').value.trim().toLowerCase();
+      const rows = document.getElementById('inventoryRows');
+      rows.innerHTML = '';
+      inventory
+        .filter(item => !lowOnly || item.pct < 35)
+        .filter(item => !q || `${item.name} ${item.unit}`.toLowerCase().includes(q))
+        .forEach(item => {
+          const levelClass = item.pct < 22 ? 'critical' : item.pct < 35 ? 'low' : '';
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td><strong>${item.name}</strong></td><td>${item.unit}</td><td class="right">${item.hand.toLocaleString('en-PH')}</td><td><div class="level ${levelClass}"><span style="width:${item.pct}%"></span></div></td><td class="right">${item.reorder.toLocaleString('en-PH')}</td>`;
+          rows.appendChild(tr);
+        });
+    }
+    document.getElementById('inventorySearch').addEventListener('input', renderInventory);
+    document.getElementById('lowOnly').addEventListener('click', () => {
+      lowOnly = !lowOnly;
+      document.getElementById('lowOnly').textContent = lowOnly ? 'Show all' : 'Low stock';
+      renderInventory();
+    });
+
+    function tickClock() {
+      const now = new Date();
+      document.getElementById('clock').textContent = now.toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' });
+    }
+    setInterval(tickClock, 30000);
+    tickClock();
+    renderMenu();
+    renderCart();
+    renderKds();
+    renderInventory();
+  </script>
+</body>
+</html>

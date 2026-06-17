@@ -1,0 +1,98 @@
+@import "tailwindcss";
+
+:root {
+  --bg: oklch(97% 0.018 82);
+  --surface: oklch(100% 0.004 82);
+  --fg: oklch(22% 0.026 65);
+  --muted: oklch(48% 0.02 72);
+  --border: oklch(88% 0.018 82);
+  --accent: oklch(55% 0.13 48);
+  --accent-soft: color-mix(in oklch, var(--accent) 12%, transparent);
+  --fg-soft: color-mix(in oklch, var(--fg) 6%, transparent);
+  --ok: oklch(58% 0.12 148);
+  --warn: oklch(68% 0.15 70);
+  --danger: oklch(58% 0.18 34);
+  --sage: oklch(70% 0.075 148);
+  --radius: 18px;
+  --radius-sm: 12px;
+  --shadow: 0 20px 60px color-mix(in oklch, var(--fg) 13%, transparent);
+}
+
+@theme inline {
+  --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-display: var(--font-lora), "Iowan Old Style", "Charter", Georgia, serif;
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --color-danger: var(--danger);
+  --color-sage: var(--sage);
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 12% 8%, color-mix(in oklch, var(--sage) 22%, transparent), transparent 28%),
+    linear-gradient(135deg, var(--bg), color-mix(in oklch, var(--surface) 82%, var(--accent-soft)));
+  color: var(--fg);
+  font-family: var(--font-sans);
+  line-height: 1.45;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-display);
+  margin: 0;
+  text-wrap: balance;
+}
+
+.num {
+  font-family: ui-monospace, 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Custom level indicators for inventory status bar */
+.level {
+  height: 10px;
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--border) 72%, var(--surface));
+  overflow: hidden;
+  min-width: 120px;
+}
+.level span {
+  display: block;
+  height: 100%;
+  background: var(--ok);
+}
+.level.low span {
+  background: var(--warn);
+}
+.level.critical span {
+  background: var(--danger);
+}
+
+/* Hide scrollbar for clean POS layout */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* KDS urgent pulse animation */
+@keyframes urgentPulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklch, var(--danger) 0%, transparent); }
+  50% { box-shadow: 0 0 0 8px color-mix(in oklch, var(--danger) 14%, transparent); }
+}
+
+.kds-card-urgent {
+  animation: urgentPulse 1.6s ease-in-out infinite;
+}

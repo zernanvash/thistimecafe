@@ -55,17 +55,21 @@ export interface DBInstance {
     wipeDatabase(): Promise<void>;
 }
 
-// Select driver based on environment variables
-const dbConnection = process.env.DB_CONNECTION || 'sqlite';
+// Select driver based on environment variables.
+// Production deployments for this app should use MongoDB Atlas; falling back to
+// SQLite on Vercel causes runtime failures against an unavailable local DB file.
+const dbConnection = (process.env.DB_CONNECTION || (process.env.NODE_ENV === 'production' ? 'mongodb' : 'sqlite')).toLowerCase();
 
 let db: DBInstance;
 
 if (dbConnection === 'mongodb') {
     const { mongoDbInstance } = require('./mongodb');
     db = mongoDbInstance;
-} else {
+} else if (dbConnection === 'sqlite') {
     const { sqliteDbInstance } = require('./sqlite');
     db = sqliteDbInstance;
+} else {
+    throw new Error(`Unsupported DB_CONNECTION "${dbConnection}". Use "mongodb" or "sqlite".`);
 }
 
 export { db };

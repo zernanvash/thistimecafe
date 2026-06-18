@@ -9,7 +9,17 @@ function hashPassword(password: string): string {
     return crypto.pbkdf2Sync(password, salt, 1000, 64, 'sha512').toString('hex');
 }
 
-const uri = process.env.DB_URI || 'mongodb://localhost:27017';
+function getMongoUri(): string {
+    if (process.env.DB_URI) {
+        return process.env.DB_URI;
+    }
+    if (process.env.NODE_ENV === 'production') {
+        throw new Error('Missing DB_URI. Set the MongoDB Atlas connection string in Vercel Environment Variables.');
+    }
+    return 'mongodb://localhost:27017';
+}
+
+const uri = getMongoUri();
 const dbName = process.env.DB_DATABASE || 'ttc_pos';
 
 let client: MongoClient | null = null;

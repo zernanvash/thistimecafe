@@ -4,6 +4,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import LockButton from '@/components/LockButton';
+import BrandMark from '@/components/BrandMark';
+import IdleLockout from '@/components/IdleLockout';
 import { Ingredient, PurchaseOrder, Order, Product } from '@/db/schema';
 
 type InventoryTab = 'inventory' | 'po' | 'reports' | 'items';
@@ -430,15 +432,19 @@ export default function AdminInventoryPage() {
 
     return (
         <main className="min-h-screen flex items-center justify-center p-3 lg:p-4 bg-[var(--bg)] font-sans">
+            <IdleLockout />
             <div className="w-full max-w-[1280px] min-h-[calc(100vh-24px)] lg:min-h-[820px] bg-[var(--surface)] border border-[var(--border)] rounded-[18px] lg:rounded-[24px] shadow-[var(--shadow)] overflow-hidden">
                 {/* Workspace area */}
                 <div className="grid grid-rows-[auto_1fr] min-w-0">
 
                     {/* Header */}
                     <header className="border-b border-[var(--border)] p-4 lg:p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                        <div>
-                            <h1 className="text-3xl font-display font-bold leading-none">Stock and sales</h1>
-                            <p className="text-[var(--muted)] text-sm mt-1">Check ingredient levels, supplier orders, and completed register sales.</p>
+                        <div className="flex items-center gap-3 min-w-0">
+                            <BrandMark compact />
+                            <div className="min-w-0">
+                                <h1 className="text-3xl font-display font-bold leading-none">Stock and sales</h1>
+                                <p className="text-[var(--muted)] text-sm mt-1">Check ingredient levels, supplier orders, and completed register sales.</p>
+                            </div>
                         </div>
                         <div className="flex gap-2.5 items-center justify-start lg:justify-end flex-wrap">
                             <span className="min-h-[40px] inline-flex items-center px-3 border border-[var(--border)] rounded-full text-[var(--muted)] bg-[var(--surface)] text-xs font-bold">

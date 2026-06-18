@@ -3,6 +3,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import BrandMark from '@/components/BrandMark';
+import IdleLockout from '@/components/IdleLockout';
 
 export default function LandingPage() {
     const router = useRouter();
@@ -69,12 +71,13 @@ export default function LandingPage() {
 
     return (
         <main className="min-h-screen flex items-center justify-center p-3 sm:p-5 bg-[var(--bg)] font-sans">
+            <IdleLockout />
             <div className="w-full max-w-[1120px] min-h-[calc(100vh-24px)] lg:min-h-[700px] bg-[var(--surface)] border border-[var(--border)] rounded-[18px] sm:rounded-[24px] shadow-[var(--shadow)] overflow-hidden p-5 sm:p-8 flex flex-col justify-between">
 
                 {/* Header */}
                 <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[var(--border)]">
-                    <div>
-                        <p className="font-mono text-[var(--accent)] uppercase tracking-[0.08em] text-xs font-extrabold mb-1">Tala Table Coffee</p>
+                    <div className="space-y-3">
+                        <BrandMark />
                         <h1 className="text-3xl sm:text-4xl font-display font-bold text-[var(--fg)]">Cashier workspace</h1>
                         <p className="text-[var(--muted)] text-sm mt-1">
                             Welcome, <strong className="text-[var(--fg)]">{user?.name}</strong>. Run orders, check stock, and review today&apos;s sales.

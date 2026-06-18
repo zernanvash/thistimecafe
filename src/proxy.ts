@@ -8,12 +8,13 @@ export async function proxy(request: NextRequest) {
 
     // Protected paths
     const isAuthPage = pathname === '/login' || pathname === '/admin/login';
+    const isHomePath = pathname === '/';
     const isPOSPath = pathname.startsWith('/pos');
     const isAdminPath = pathname.startsWith('/admin') && pathname !== '/admin/login';
     const isApiPath = pathname.startsWith('/api/') && !pathname.startsWith('/api/auth');
 
     // 1. If not logged in and trying to access a protected route
-    if (!session && (isPOSPath || isAdminPath || isApiPath)) {
+    if (!session && (isHomePath || isPOSPath || isAdminPath || isApiPath)) {
         if (isApiPath) {
             return new NextResponse(
                 JSON.stringify({ error: 'Unauthorized. Please log in.' }),

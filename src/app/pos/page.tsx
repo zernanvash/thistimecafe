@@ -4,6 +4,8 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import LockButton from '@/components/LockButton';
+import BrandMark from '@/components/BrandMark';
+import IdleLockout from '@/components/IdleLockout';
 import { Product, Ingredient, Order } from '@/db/schema';
 
 interface CartItem {
@@ -340,15 +342,19 @@ export default function POSPage() {
 
     return (
         <main className="h-screen max-h-screen overflow-hidden flex items-center justify-center p-0 lg:p-2 bg-[var(--bg)] font-sans">
+            <IdleLockout />
             <div className="w-full max-w-[1280px] h-full lg:h-[calc(100vh-16px)] bg-[var(--surface)] border-0 lg:border border-[var(--border)] rounded-none lg:rounded-[24px] shadow-[var(--shadow)] overflow-hidden flex flex-col">
                 {/* Workspace area */}
                 <div className="flex-1 grid grid-rows-[auto_1fr] min-h-0">
 
                     {/* Header */}
                     <header className="border-b border-[var(--border)] py-3 px-4 lg:py-3.5 lg:px-5 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-                        <div>
-                            <h1 className="text-xl sm:text-2xl font-display font-bold leading-none">Register</h1>
-                            <p className="text-[var(--muted)] text-xs mt-1">Build the order, take payment, and give change from one screen.</p>
+                        <div className="flex items-center gap-3 min-w-0">
+                            <BrandMark compact />
+                            <div className="min-w-0">
+                                <h1 className="text-xl sm:text-2xl font-display font-bold leading-none">Register</h1>
+                                <p className="text-[var(--muted)] text-xs mt-1">Build the order, take payment, and give change from one screen.</p>
+                            </div>
                         </div>
                         <div className="flex gap-2 items-center justify-start lg:justify-end flex-wrap">
                             <span className="min-h-[36px] inline-flex items-center px-2.5 border border-[var(--border)] rounded-full text-[var(--muted)] bg-[var(--surface)] text-[11px] font-bold">

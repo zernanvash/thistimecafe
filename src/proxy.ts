@@ -7,19 +7,21 @@ export async function proxy(request: NextRequest) {
     const session = await getSession(request);
 
     // Protected paths
-    const isAuthPage = pathname === '/login';
+    const isAuthPage = pathname === '/login' || pathname === '/admin/login';
     const isPOSPath = pathname.startsWith('/pos');
-    const isKDSPath = pathname.startsWith('/kds');
-    const isAdminPath = pathname.startsWith('/admin');
+    const isAdminPath = pathname.startsWith('/admin') && pathname !== '/admin/login';
     const isApiPath = pathname.startsWith('/api/') && !pathname.startsWith('/api/auth');
 
     // 1. If not logged in and trying to access a protected route
-    if (!session && (isPOSPath || isKDSPath || isAdminPath || isApiPath)) {
+    if (!session && (isPOSPath || isAdminPath || isApiPath)) {
         if (isApiPath) {
             return new NextResponse(
                 JSON.stringify({ error: 'Unauthorized. Please log in.' }),
                 { status: 401, headers: { 'content-type': 'application/json' } }
             );
+        }
+        if (isAdminPath) {
+            return NextResponse.redirect(new URL('/admin/login', request.url));
         }
         return NextResponse.redirect(new URL('/login', request.url));
     }
@@ -47,7 +49,6 @@ export const config = {
         '/',
         '/login',
         '/pos/:path*',
-        '/kds/:path*',
         '/admin/:path*',
         '/api/admin/:path*',
         '/api/orders/:path*',

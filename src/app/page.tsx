@@ -58,36 +58,35 @@ export default function LandingPage() {
 
     if (loading) {
         return (
-            <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[var(--bg)] to-[color-mix(in_oklch,var(--surface)_82%,var(--accent-soft))]">
-                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[var(--accent)]"></div>
+            <main className="min-h-screen flex items-center justify-center bg-[var(--bg)]">
+                <div role="status" aria-live="polite" className="flex flex-col items-center gap-3 text-sm font-bold text-[var(--muted)]">
+                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[var(--accent)]"></div>
+                    Loading cashier workspace
+                </div>
             </main>
         );
     }
 
-    const isAdmin = user && ['admin', 'manager'].includes(user.role);
-    const canUseOrders = user && ['admin', 'manager', 'cashier'].includes(user.role);
-    const canUseKitchen = user && ['admin', 'manager', 'barista'].includes(user.role);
-
     return (
-        <main className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-[var(--bg)] to-[color-mix(in_oklch,var(--surface)_82%,var(--accent-soft))] font-sans">
-            <div className="w-full max-w-[1080px] min-h-[720px] bg-[var(--surface)] border border-[var(--border)] rounded-[34px] shadow-[var(--shadow)] overflow-hidden p-8 flex flex-col justify-between">
-                
+        <main className="min-h-screen flex items-center justify-center p-3 sm:p-5 bg-[var(--bg)] font-sans">
+            <div className="w-full max-w-[1120px] min-h-[calc(100vh-24px)] lg:min-h-[700px] bg-[var(--surface)] border border-[var(--border)] rounded-[18px] sm:rounded-[24px] shadow-[var(--shadow)] overflow-hidden p-5 sm:p-8 flex flex-col justify-between">
+
                 {/* Header */}
-                <header className="flex items-center justify-between pb-6 border-b border-[var(--border)]">
+                <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[var(--border)]">
                     <div>
                         <p className="font-mono text-[var(--accent)] uppercase tracking-[0.08em] text-xs font-extrabold mb-1">Tala Table Coffee</p>
-                        <h1 className="text-4xl font-display font-bold text-[var(--fg)]">Your workspace is ready</h1>
+                        <h1 className="text-3xl sm:text-4xl font-display font-bold text-[var(--fg)]">Cashier workspace</h1>
                         <p className="text-[var(--muted)] text-sm mt-1">
-                            Welcome, <strong className="text-[var(--fg)]">{user?.name}</strong>. Your PIN opened the {user?.role} station.
+                            Welcome, <strong className="text-[var(--fg)]">{user?.name}</strong>. Run orders, check stock, and review today&apos;s sales.
                         </p>
                     </div>
-                    <div className="flex gap-2.5 items-center">
+                    <div className="flex gap-2.5 items-center self-stretch sm:self-auto">
                         <span className="num min-h-[44px] px-4 inline-flex items-center border border-[var(--border)] rounded-full text-[var(--muted)] bg-[var(--surface)] text-sm font-bold shadow-sm">
                             {clock}
                         </span>
                         <button
                             onClick={handleLock}
-                            className="min-h-[44px] px-5 bg-[color-mix(in_oklch,var(--danger)_10%,transparent)] border border-[color-mix(in_oklch,var(--danger)_24%,var(--border))] text-[var(--danger)] rounded-full text-sm font-extrabold cursor-pointer hover:bg-[var(--danger)] hover:text-white transition-all active:scale-95 flex items-center gap-1.5 shadow-sm"
+                            className="btn-danger btn-pill min-h-[44px] px-5 border text-sm cursor-pointer transition-all active:scale-95 flex items-center gap-1.5"
                         >
                             <svg className="w-4 h-4 stroke-[2]" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                                 <path d="M8 11V8a4 4 0 0 1 8 0v3" strokeLinecap="round" strokeLinejoin="round"/>
@@ -99,13 +98,13 @@ export default function LandingPage() {
                 </header>
 
                 {/* Main Navigation Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-6 my-10 flex-1 items-center">
-                    
+                <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.9fr_0.9fr] gap-4 my-6 sm:my-8 flex-1 items-stretch">
+
                     {/* POS Card */}
-                    {canUseOrders && (
+                    {user && (user.role === 'admin' || user.role === 'manager' || user.role === 'cashier' || user.role === 'barista') && (
                     <button
                         onClick={() => router.push('/pos')}
-                        className="h-full min-h-[280px] rounded-[24px] border border-[var(--border)] bg-gradient-to-br from-[var(--surface)] to-[color-mix(in_oklch,var(--bg)_20%,var(--surface))] p-8 text-left flex flex-col justify-between hover:border-[var(--accent)] hover:shadow-lg active:scale-[0.98] transition-all cursor-pointer group shadow-sm"
+                        className="btn-tile btn-tile-primary h-full min-h-[220px] lg:min-h-[320px] rounded-[18px] border p-6 sm:p-8 text-left flex flex-col justify-between active:scale-[0.99] transition-all cursor-pointer group"
                     >
                         <div className="w-14 h-14 rounded-2xl bg-[var(--accent-soft)] text-[var(--accent)] flex items-center justify-center transition-all group-hover:scale-110">
                             <svg className="w-8 h-8 stroke-[1.8]" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -114,35 +113,23 @@ export default function LandingPage() {
                             </svg>
                         </div>
                         <div className="mt-8">
-                            <h2 className="text-2xl font-display font-bold text-[var(--fg)] group-hover:text-[var(--accent)] transition-colors">Take orders</h2>
-                            <p className="text-[var(--muted)] text-sm mt-2">Large menu buttons, cash shortcuts, and automatic change calculation.</p>
-                        </div>
-                    </button>
-                    )}
-
-                    {/* KDS Card */}
-                    {canUseKitchen && (
-                    <button
-                        onClick={() => router.push('/kds')}
-                        className="h-full min-h-[280px] rounded-[24px] border border-[var(--border)] bg-gradient-to-br from-[var(--surface)] to-[color-mix(in_oklch,var(--bg)_20%,var(--surface))] p-8 text-left flex flex-col justify-between hover:border-[var(--accent)] hover:shadow-lg active:scale-[0.98] transition-all cursor-pointer group shadow-sm"
-                    >
-                        <div className="w-14 h-14 rounded-2xl bg-[var(--accent-soft)] text-[var(--accent)] flex items-center justify-center transition-all group-hover:scale-110">
-                            <svg className="w-8 h-8 stroke-[1.8]" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                <path d="M4 13h6V5H4v8Zm10 6h6V5h-6v14ZM4 19h6v-3H4v3Z" strokeLinecap="round" strokeLinejoin="round"/>
-                            </svg>
-                        </div>
-                        <div className="mt-8">
-                            <h2 className="text-2xl font-display font-bold text-[var(--fg)] group-hover:text-[var(--accent)] transition-colors">Barista queue</h2>
-                            <p className="text-[var(--muted)] text-sm mt-2">Aging colors, prep actions, and a separate ready-for-pickup lane.</p>
+                            <h2 className="text-2xl font-display font-bold text-[var(--fg)] group-hover:text-[var(--accent)] transition-colors">
+                                {user.role === 'barista' ? 'Record orders' : 'Take orders'}
+                            </h2>
+                            <p className="text-[var(--muted)] text-sm mt-2">
+                                {user.role === 'barista'
+                                    ? 'Record beverage orders to the barista prep queue (checkout disabled).'
+                                    : 'Large menu buttons, cash shortcuts, and automatic change calculation.'}
+                            </p>
                         </div>
                     </button>
                     )}
 
                     {/* Inventory Card */}
-                    {isAdmin && (
+                    {user && (user.role === 'admin' || user.role === 'manager' || user.role === 'barista') && (
                     <button
                         onClick={() => router.push('/admin/inventory')}
-                        className="h-full min-h-[280px] rounded-[24px] border border-[var(--border)] bg-gradient-to-br from-[var(--surface)] to-[color-mix(in_oklch,var(--bg)_20%,var(--surface))] p-8 text-left flex flex-col justify-between hover:border-[var(--accent)] hover:shadow-lg active:scale-[0.98] transition-all cursor-pointer group shadow-sm"
+                        className="btn-tile h-full min-h-[200px] lg:min-h-[240px] rounded-[18px] border p-6 sm:p-7 text-left flex flex-col justify-between active:scale-[0.99] transition-all cursor-pointer group"
                     >
                         <div className="w-14 h-14 rounded-2xl bg-[var(--accent-soft)] text-[var(--accent)] flex items-center justify-center transition-all group-hover:scale-110">
                             <svg className="w-8 h-8 stroke-[1.8]" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -151,8 +138,39 @@ export default function LandingPage() {
                             </svg>
                         </div>
                         <div className="mt-8">
-                            <h2 className="text-2xl font-display font-bold text-[var(--fg)] group-hover:text-[var(--accent)] transition-colors">Stock control</h2>
-                            <p className="text-[var(--muted)] text-sm mt-2">Recipe-aware raw ingredient levels, supplier POs, and daily reports.</p>
+                            <h2 className="text-2xl font-display font-bold text-[var(--fg)] group-hover:text-[var(--accent)] transition-colors">
+                                {user.role === 'barista' ? 'View stock (read-only)' : 'Check inventory'}
+                            </h2>
+                            <p className="text-[var(--muted)] text-sm mt-2">
+                                {user.role === 'barista'
+                                    ? 'Check raw ingredient levels and request stock replenishment (supplier POs).'
+                                    : 'Review raw ingredient levels, low stock, and supplier order status.'}
+                            </p>
+                        </div>
+                    </button>
+                    )}
+
+                    {/* Sales History Card */}
+                    {user && (user.role === 'admin' || user.role === 'manager' || user.role === 'cashier') && (
+                    <button
+                        onClick={() => router.push('/admin/inventory?tab=reports')}
+                        className="btn-tile h-full min-h-[200px] lg:min-h-[240px] rounded-[18px] border p-6 sm:p-7 text-left flex flex-col justify-between active:scale-[0.99] transition-all cursor-pointer group"
+                    >
+                        <div className="w-14 h-14 rounded-2xl bg-[var(--accent-soft)] text-[var(--accent)] flex items-center justify-center transition-all group-hover:scale-110">
+                            <svg className="w-8 h-8 stroke-[1.8]" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M4 19V5" strokeLinecap="round" strokeLinejoin="round"/>
+                                <path d="M8 17V9M12 17V7M16 17v-5M20 19H4" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                        </div>
+                        <div className="mt-8">
+                            <h2 className="text-2xl font-display font-bold text-[var(--fg)] group-hover:text-[var(--accent)] transition-colors">
+                                {user.role === 'cashier' ? 'My transaction history' : 'Sales history'}
+                            </h2>
+                            <p className="text-[var(--muted)] text-sm mt-2">
+                                {user.role === 'cashier'
+                                    ? 'Check your completed sales, transactions, and own register totals.'
+                                    : 'Check completed sales, discounts, and register totals by date.'}
+                            </p>
                         </div>
                     </button>
                     )}
@@ -160,18 +178,16 @@ export default function LandingPage() {
                 </div>
 
                 {/* Footer and Developer shortcut */}
-                <footer className="flex items-center justify-between pt-6 border-t border-[var(--border)] text-xs text-[var(--muted)]">
+                <footer className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-6 border-t border-[var(--border)] text-xs text-[var(--muted)]">
                     <div>
                         Current shift: <strong className="text-[var(--fg)] font-bold">Morning register active</strong>
                     </div>
-                    {isAdmin && (
-                        <button
-                            onClick={() => router.push('/admin/dev')}
-                            className="font-bold text-[var(--accent)] hover:underline flex items-center gap-1 cursor-pointer"
-                        >
-                            Dev settings and database admin
-                        </button>
-                    )}
+                    <button
+                        onClick={() => router.push('/pos')}
+                        className="btn-secondary btn-pill border text-xs cursor-pointer transition-all flex items-center gap-1 self-start sm:self-auto"
+                    >
+                        Back to orders
+                    </button>
                 </footer>
 
             </div>

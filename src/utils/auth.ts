@@ -49,27 +49,46 @@ export interface JWTPayload {
 export type StaffRole = 'admin' | 'cashier' | 'barista' | 'manager';
 
 export function getHomePathForRole(role: StaffRole): string {
-    if (role === 'cashier') return '/pos';
-    if (role === 'barista') return '/kds';
-    return '/';
+    if (role === 'manager' || role === 'admin') {
+        return '/';
+    }
+    return '/pos';
 }
 
 export function canRoleAccessPath(role: StaffRole, pathname: string): boolean {
     if (pathname === '/' || pathname.startsWith('/api/auth')) return true;
 
-    const adminRoutes = ['/admin', '/api/admin'];
-    const cashierRoutes = ['/pos', '/api/products', '/api/ingredients', '/api/orders'];
-    const baristaRoutes = ['/kds', '/api/orders'];
-
+    // Admin & Manager have full access to all paths
     if (role === 'admin' || role === 'manager') {
-        return [...adminRoutes, ...cashierRoutes, ...baristaRoutes].some((path) => pathname.startsWith(path));
+        return true;
     }
 
+    // Cashier allowed paths
     if (role === 'cashier') {
-        return cashierRoutes.some((path) => pathname.startsWith(path));
+        const cashierAllowed = [
+            '/pos',
+            '/admin/inventory', // allowed for viewing own sales history
+            '/api/products',
+            '/api/ingredients',
+            '/api/orders'
+        ];
+        return cashierAllowed.some((path) => pathname.startsWith(path));
     }
 
-    return baristaRoutes.some((path) => pathname.startsWith(path));
+    // Barista allowed paths
+    if (role === 'barista') {
+        const baristaAllowed = [
+            '/pos', // allowed to build/record orders (read-only checkout)
+            '/admin/inventory', // allowed to view stock and request replenishment (PO)
+            '/api/products',
+            '/api/ingredients',
+            '/api/orders',
+            '/api/admin/purchase-orders'
+        ];
+        return baristaAllowed.some((path) => pathname.startsWith(path));
+    }
+
+    return false;
 }
 
 // Get SubtleCrypto key

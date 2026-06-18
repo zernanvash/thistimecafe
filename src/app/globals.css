@@ -1,26 +1,30 @@
 @import "tailwindcss";
 
 :root {
-  --bg: oklch(97% 0.018 82);
-  --surface: oklch(100% 0.004 82);
-  --fg: oklch(22% 0.026 65);
-  --muted: oklch(48% 0.02 72);
-  --border: oklch(88% 0.018 82);
-  --accent: oklch(55% 0.13 48);
+  --bg: oklch(97% 0.01 88);
+  --surface: oklch(99.5% 0.003 88);
+  --fg: oklch(21% 0.022 72);
+  --muted: oklch(46% 0.018 78);
+  --border: oklch(88% 0.012 88);
+  --accent: oklch(47% 0.105 54);
+  --accent-strong: oklch(39% 0.115 54);
   --accent-soft: color-mix(in oklch, var(--accent) 12%, transparent);
+  --accent-ring: color-mix(in oklch, var(--accent) 28%, var(--surface));
   --fg-soft: color-mix(in oklch, var(--fg) 6%, transparent);
   --ok: oklch(58% 0.12 148);
   --warn: oklch(68% 0.15 70);
   --danger: oklch(58% 0.18 34);
   --sage: oklch(70% 0.075 148);
-  --radius: 18px;
-  --radius-sm: 12px;
-  --shadow: 0 14px 42px color-mix(in oklch, var(--fg) 9%, transparent);
+  --radius: 14px;
+  --radius-sm: 10px;
+  --shadow: 0 12px 34px color-mix(in oklch, var(--fg) 6%, transparent);
+  --button-shadow: 0 8px 18px color-mix(in oklch, var(--accent) 18%, transparent), inset 0 -2px 0 color-mix(in oklch, var(--fg) 16%, transparent);
+  --button-shadow-soft: 0 6px 16px color-mix(in oklch, var(--fg) 8%, transparent), inset 0 -1px 0 color-mix(in oklch, var(--fg) 8%, transparent);
 }
 
 @theme inline {
   --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-  --font-display: var(--font-lora), Iowan Old Style, Charter, Georgia, serif;
+  --font-display: var(--font-inter), "Aptos Display", "Segoe UI", system-ui, sans-serif;
   --color-bg: var(--bg);
   --color-surface: var(--surface);
   --color-fg: var(--fg);
@@ -49,10 +53,120 @@ h1, h2, h3 {
   font-family: var(--font-display);
   margin: 0;
   text-wrap: balance;
+  letter-spacing: -0.02em;
 }
 
 button, input, select {
   touch-action: manipulation;
+}
+
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn-primary {
+  border-color: var(--accent-strong);
+  background: linear-gradient(180deg, color-mix(in oklch, var(--accent) 96%, white), var(--accent-strong));
+  color: var(--surface);
+  box-shadow: var(--button-shadow);
+  font-weight: 900;
+}
+
+.btn-primary:not(:disabled):hover {
+  transform: translateY(-1px);
+  filter: saturate(1.08);
+}
+
+.btn-primary:not(:disabled):active {
+  transform: translateY(1px) scale(0.99);
+  box-shadow: inset 0 2px 0 color-mix(in oklch, var(--fg) 16%, transparent);
+}
+
+.btn-secondary {
+  border-color: color-mix(in oklch, var(--fg) 18%, var(--border));
+  background: color-mix(in oklch, var(--surface) 88%, var(--bg));
+  color: var(--fg);
+  box-shadow: var(--button-shadow-soft);
+  font-weight: 850;
+}
+
+.btn-secondary:not(:disabled):hover {
+  border-color: var(--accent);
+  background: color-mix(in oklch, var(--accent) 9%, var(--surface));
+  color: var(--accent-strong);
+}
+
+.btn-danger {
+  border-color: color-mix(in oklch, var(--danger) 42%, var(--border));
+  background: color-mix(in oklch, var(--danger) 12%, var(--surface));
+  color: var(--danger);
+  box-shadow: 0 6px 14px color-mix(in oklch, var(--danger) 10%, transparent);
+  font-weight: 900;
+}
+
+.btn-danger:not(:disabled):hover {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: white;
+}
+
+.btn-pill {
+  min-height: 40px;
+  padding-inline: 14px;
+  border-radius: 999px;
+}
+
+.btn-key {
+  border-color: color-mix(in oklch, var(--fg) 20%, var(--border));
+  background: linear-gradient(180deg, var(--surface), color-mix(in oklch, var(--bg) 72%, var(--surface)));
+  color: var(--fg);
+  box-shadow: var(--button-shadow-soft);
+  font-weight: 900;
+}
+
+.btn-key:not(:disabled):hover {
+  border-color: var(--accent);
+  color: var(--accent-strong);
+}
+
+.btn-key:not(:disabled):active {
+  transform: translateY(1px) scale(0.97);
+}
+
+.btn-tile {
+  border-color: color-mix(in oklch, var(--fg) 16%, var(--border));
+  background: linear-gradient(180deg, color-mix(in oklch, var(--surface) 86%, white), color-mix(in oklch, var(--bg) 58%, var(--surface)));
+  box-shadow: var(--button-shadow-soft);
+}
+
+.btn-tile:not(:disabled):hover {
+  border-color: var(--accent);
+  background: color-mix(in oklch, var(--accent) 7%, var(--surface));
+  box-shadow: 0 14px 26px color-mix(in oklch, var(--accent) 13%, transparent);
+}
+
+.btn-tile-primary {
+  border-color: color-mix(in oklch, var(--accent) 48%, var(--border));
+  background: linear-gradient(180deg, color-mix(in oklch, var(--accent) 10%, var(--surface)), color-mix(in oklch, var(--accent) 18%, var(--surface)));
+}
+
+.btn-segment {
+  border-color: color-mix(in oklch, var(--fg) 16%, var(--border));
+  background: var(--surface);
+  color: var(--fg);
+  box-shadow: inset 0 -1px 0 color-mix(in oklch, var(--fg) 8%, transparent);
+}
+
+.btn-segment[aria-pressed="true"] {
+  border-color: var(--accent-strong);
+  background: var(--accent);
+  color: var(--surface);
+  box-shadow: var(--button-shadow);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  box-shadow: none;
 }
 
 button:focus-visible,
@@ -65,6 +179,61 @@ select:focus-visible {
 .num {
   font-family: ui-monospace, 'JetBrains Mono', 'SF Mono', Menlo, monospace;
   font-variant-numeric: tabular-nums;
+}
+
+.inventory-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.inventory-table th,
+.inventory-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.inventory-table th {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.inventory-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.inventory-table .right {
+  text-align: right;
+}
+
+.metric {
+  min-height: 118px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.metric span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.metric strong {
+  color: var(--fg);
+  font-size: clamp(24px, 4vw, 34px);
+  line-height: 1;
 }
 
 /* Custom level indicators for inventory status bar */
@@ -96,12 +265,19 @@ select:focus-visible {
   scrollbar-width: none;
 }
 
-/* KDS urgent pulse animation */
-@keyframes urgentPulse {
-  0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklch, var(--danger) 0%, transparent); }
-  50% { box-shadow: 0 0 0 8px color-mix(in oklch, var(--danger) 14%, transparent); }
+@media (max-width: 760px) {
+  .inventory-table {
+    min-width: 720px;
+  }
 }
 
-.kds-card-urgent {
-  animation: urgentPulse 1.6s ease-in-out infinite;
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
 }

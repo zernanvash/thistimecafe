@@ -17,6 +17,13 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Invalid PIN' }, { status: 401 });
         }
 
+        if (['admin', 'manager'].includes(user.role)) {
+            return NextResponse.json(
+                { error: 'Admin/Manager accounts must log in with username and password.' },
+                { status: 403 }
+            );
+        }
+
         const token = await signToken({
             userId: user.id,
             role: user.role,

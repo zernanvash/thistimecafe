@@ -24,11 +24,12 @@ export async function POST(req: NextRequest) {
         }
 
         const body = await req.json();
-        const { name, stock, unit, min_threshold } = body as {
+        const { name, stock, unit, min_threshold, max_capacity } = body as {
             name: string;
             stock: number;
             unit: 'g' | 'ml' | 'unit' | 'kg';
             min_threshold: number;
+            max_capacity?: number;
         };
 
         if (!name || stock === undefined || !unit || min_threshold === undefined) {
@@ -41,6 +42,7 @@ export async function POST(req: NextRequest) {
             stock,
             unit,
             min_threshold,
+            max_capacity: max_capacity !== undefined ? Number(max_capacity) : Number(stock),
             created_at: new Date().toISOString()
         };
 

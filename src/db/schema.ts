@@ -17,7 +17,7 @@ export interface MenuItemCustomization {
 export interface Product {
     id: string;
     name: string;
-    category: 'Espresso / Hot Coffee' | 'Cold Brew / Iced Coffee' | 'Non-Coffee' | 'Frappes' | 'Pastries & Bakery' | 'Retail';
+    category: 'Hot Coffee' | 'Iced Coffee (Classic)' | 'Iced Coffee (Premium)' | 'Non-Coffee' | 'Berries Series' | 'Pastries';
     price: number; // base price
     cost?: number; // base cost
     sku?: string;
@@ -33,6 +33,7 @@ export interface Ingredient {
     stock: number; // current stock (e.g. 5000g of Espresso Beans)
     unit: 'g' | 'ml' | 'unit' | 'kg';
     min_threshold: number; // low stock alert threshold
+    max_capacity?: number; // maximum stock capacity
     created_at: string;
 }
 

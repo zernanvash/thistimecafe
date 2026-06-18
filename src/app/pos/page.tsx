@@ -15,36 +15,47 @@ interface CartItem {
     finalPricePerUnit: number;
 }
 
+const CATEGORY_MAP = [
+    { id: 'All items', label: 'All', icon: '📋' },
+    { id: 'Hot Coffee', label: 'Hot', icon: '☕' },
+    { id: 'Iced Coffee (Classic)', label: 'Iced Classic', icon: '🧊' },
+    { id: 'Iced Coffee (Premium)', label: 'Iced Premium', icon: '✨' },
+    { id: 'Non-Coffee', label: 'Non-Coffee', icon: '🍵' },
+    { id: 'Berries Series', label: 'Berries', icon: '🍓' },
+    { id: 'Pastries', label: 'Pastries', icon: '🥐' }
+];
+
 export default function POSPage() {
     const router = useRouter();
     const cartItemSeq = useRef(0);
     const [products, setProducts] = useState<Product[]>([]);
     const [ingredients, setIngredients] = useState<Ingredient[]>([]);
-    const [categories, setCategories] = useState<string[]>(['All items', 'Coffee', 'Tea', 'Pastry', 'Cold bar']);
     const [activeCategory, setActiveCategory] = useState<string>('All items');
     const [searchQuery, setSearchQuery] = useState<string>('');
     const [clock, setClock] = useState<string>('08:42');
-    
+
     // Cart and order details
     const [cart, setCart] = useState<CartItem[]>([]);
     const [diningOption, setDiningOption] = useState<'dine-in' | 'takeout' | 'delivery'>('takeout');
-    const [discountType, setDiscountType] = useState<'none' | 'flat' | 'percent'>('none');
-    const [discountValue, setDiscountValue] = useState<number>(0);
 
+    const [user, setUser] = useState<{ id: string; name: string; role: string } | null>(null);
     // Dialog/Modal States
     const [customizingProduct, setCustomizingProduct] = useState<Product | null>(null);
     const [customSize, setCustomSize] = useState<string>('Medium');
-    const [customMilk, setCustomMilk] = useState<string>('Whole Milk');
     const [customSyrups, setCustomSyrups] = useState<string[]>([]);
     const [customShots, setCustomShots] = useState<number>(0);
+    const [customCream, setCustomCream] = useState<boolean>(false);
     const [itemNotes, setItemNotes] = useState<string>('');
+    const [discountPercent, setDiscountPercent] = useState<number>(0);
 
     const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'qr'>('cash');
     const [cashReceived, setCashReceived] = useState<number>(0);
+    const [isCatalogLoading, setIsCatalogLoading] = useState<boolean>(true);
+    const [catalogError, setCatalogError] = useState<string>('');
     const [isSubmittingOrder, setIsSubmittingOrder] = useState<boolean>(false);
     const [errorMessage, setErrorMessage] = useState<string>('');
-    
-    // Receipt Modal States
+
+    // Sale confirmation state
     const [completedOrder, setCompletedOrder] = useState<Order | null>(null);
 
     const createCartItemId = () => {
@@ -70,7 +81,7 @@ export default function POSPage() {
                 const sessionRes = await fetch('/api/auth/session');
                 const sessionData = await sessionRes.json();
                 if (sessionRes.ok && sessionData.authenticated) {
-                    // Session is valid; route access is enforced by proxy/API guards.
+                    setUser(sessionData.user);
                 } else {
                     router.push('/login');
                     return;
@@ -80,6 +91,8 @@ export default function POSPage() {
                 const productsData = await productsRes.json();
                 if (productsRes.ok) {
                     setProducts(productsData);
+                } else {
+                    setCatalogError(productsData.error || 'Menu could not be loaded.');
                 }
 
                 const ingRes = await fetch('/api/ingredients');
@@ -89,6 +102,9 @@ export default function POSPage() {
                 }
             } catch (err) {
                 console.error('Failed to load page data:', err);
+                setCatalogError('Connection issue while loading the register menu.');
+            } finally {
+                setIsCatalogLoading(false);
             }
         };
         loadSessionAndData();
@@ -96,51 +112,27 @@ export default function POSPage() {
 
     // Cart calculations
     const subtotal = cart.reduce((sum, item) => sum + (item.finalPricePerUnit * item.quantity), 0);
-    
-    let discountAmount = 0;
-    if (discountType === 'flat') {
-        discountAmount = discountValue;
-    } else if (discountType === 'percent') {
-        discountAmount = (subtotal * discountValue) / 100;
-    }
-    discountAmount = Math.min(subtotal, Math.max(0, discountAmount));
-    
-    const taxableAmount = Math.max(0, subtotal - discountAmount);
-    // Add standard 5% service fee matching prototype formula
-    const serviceFee = subtotal ? Math.round(subtotal * 0.05) : 0;
-    const total = taxableAmount + serviceFee;
+
+    const discountAmount = Math.round(subtotal * (discountPercent / 100));
+
+    const total = Math.max(0, subtotal - discountAmount);
+    // 8% Standard Tax breakdown matching store configuration
+    const tax = Math.round(total * 0.08 * 100) / 100;
 
     // Handle product tap
     const handleProductClick = (product: Product) => {
-        const isDrink = ['Espresso / Hot Coffee', 'Cold Brew / Iced Coffee', 'Non-Coffee', 'Frappes'].includes(product.category);
-        if (isDrink) {
-            setCustomizingProduct(product);
-            setCustomSize('Medium');
-            setCustomMilk('Whole Milk');
-            setCustomSyrups([]);
-            setCustomShots(0);
-            setItemNotes('');
+        setCustomizingProduct(product);
+        if (product.category === 'Pastries') {
+            setCustomSize('Single');
+        } else if (product.category === 'Hot Coffee') {
+            setCustomSize('8oz');
         } else {
-            addToCartDirectly(product);
+            setCustomSize('16oz');
         }
-    };
-
-    const addToCartDirectly = (product: Product) => {
-        const existingIndex = cart.findIndex(item => item.product.id === product.id && item.customizations.length === 0);
-        if (existingIndex > -1) {
-            const newCart = [...cart];
-            newCart[existingIndex].quantity += 1;
-            setCart(newCart);
-        } else {
-            setCart([...cart, {
-                id: createCartItemId(),
-                product,
-                quantity: 1,
-                customizations: [],
-                notes: '',
-                finalPricePerUnit: product.price
-            }]);
-        }
+        setCustomSyrups([]);
+        setCustomShots(0);
+        setCustomCream(false);
+        setItemNotes('');
     };
 
     const handleAddCustomized = () => {
@@ -149,29 +141,54 @@ export default function POSPage() {
         const customizations: { name: string; price_impact: number }[] = [];
         let priceImpact = 0;
 
-        if (customSize === 'Small') {
-            customizations.push({ name: 'Small', price_impact: -20 });
-            priceImpact -= 20;
-        } else if (customSize === 'Large') {
-            customizations.push({ name: 'Large', price_impact: 25 });
-            priceImpact += 25;
+        if (customizingProduct.category === 'Pastries') {
+            if (customSize === 'Pack of 6') {
+                const diff = customizingProduct.name.includes('Classic') ? 105 : 115;
+                customizations.push({ name: 'Pack of 6', price_impact: diff });
+                priceImpact = diff;
+            } else {
+                customizations.push({ name: 'Single Piece', price_impact: 0 });
+            }
+        } else if (customizingProduct.category === 'Hot Coffee') {
+            customizations.push({ name: '8oz', price_impact: 0 });
         } else {
-            customizations.push({ name: 'Medium', price_impact: 0 });
+            // Iced Coffee, Non-Coffee, Berries Series
+            if (customSize === '22oz') {
+                let diff = 20;
+                const name = customizingProduct.name;
+                if (name.includes('Mocha Latte\'') && customizingProduct.category.includes('Classic')) {
+                    diff = 30;
+                } else if (name.includes('Seasalt Latte\'') && customizingProduct.category.includes('Classic')) {
+                    diff = 30;
+                } else if (name.includes('Milo Matcha')) {
+                    diff = 30;
+                } else if (name.includes('Cookies & Cream Cloud')) {
+                    diff = 10;
+                } else if (name.includes('Blueberry Cloud')) {
+                    diff = 10;
+                }
+                customizations.push({ name: '22oz', price_impact: diff });
+                priceImpact = diff;
+            } else {
+                customizations.push({ name: '16oz', price_impact: 0 });
+            }
         }
 
-        if (customMilk !== 'Whole Milk') {
-            customizations.push({ name: `${customMilk}`, price_impact: 35 });
-            priceImpact += 35;
-        }
+        if (customizingProduct.category !== 'Pastries') {
+            customSyrups.forEach(syrup => {
+                customizations.push({ name: syrup, price_impact: 29 });
+                priceImpact += 29;
+            });
 
-        customSyrups.forEach(syrup => {
-            customizations.push({ name: `${syrup}`, price_impact: 20 });
-            priceImpact += 20;
-        });
+            if (customShots > 0) {
+                customizations.push({ name: `+${customShots} Shot`, price_impact: 39 * customShots });
+                priceImpact += 39 * customShots;
+            }
 
-        if (customShots > 0) {
-            customizations.push({ name: `+${customShots} Shot`, price_impact: 30 * customShots });
-            priceImpact += 30 * customShots;
+            if (customCream) {
+                customizations.push({ name: 'Extra Cream', price_impact: 29 });
+                priceImpact += 29;
+            }
         }
 
         const finalPricePerUnit = Math.max(0, customizingProduct.price + priceImpact);
@@ -200,18 +217,23 @@ export default function POSPage() {
         }
     };
 
-    const removeCartItem = (id: string) => {
-        setCart(cart.filter(item => item.id !== id));
-    };
-
-    const handleQuickCash = (val: string) => {
-        if (val === 'clear') {
+    const handleKeypadInput = (key: string) => {
+        if (key === 'C') {
             setCashReceived(0);
-        } else if (val === 'exact') {
-            setCashReceived(total);
+        } else if (key === '⌫') {
+            setCashReceived(prev => {
+                const str = prev.toString();
+                if (str.length <= 1) return 0;
+                return parseFloat(str.slice(0, -1)) || 0;
+            });
         } else {
-            const cashVal = parseFloat(val);
-            setCashReceived(prev => prev + cashVal);
+            setCashReceived(prev => {
+                if (prev === 0) {
+                    return parseFloat(key) || 0;
+                }
+                const str = prev.toString() + key;
+                return parseFloat(str) || 0;
+            });
         }
     };
 
@@ -250,15 +272,16 @@ export default function POSPage() {
                 body: JSON.stringify(orderPayload)
             });
             const data = await res.json();
-            
+
             if (res.ok) {
                 setCompletedOrder(data.order);
                 setCart([]);
                 setCashReceived(0);
+                setDiscountPercent(0);
             } else {
                 setErrorMessage(data.error || 'Failed to complete order.');
             }
-        } catch (err) {
+        } catch {
             setErrorMessage('Network connection issues.');
         } finally {
             setIsSubmittingOrder(false);
@@ -304,104 +327,166 @@ export default function POSPage() {
         let categoryMatch = false;
         if (activeCategory === 'All items') {
             categoryMatch = true;
-        } else if (activeCategory === 'Coffee') {
-            categoryMatch = p.category.includes('Coffee');
-        } else if (activeCategory === 'Tea') {
-            categoryMatch = p.category.includes('Tea') || p.category.includes('Matcha') || p.category.includes('Non-Coffee');
-        } else if (activeCategory === 'Pastry') {
-            categoryMatch = p.category.includes('Pastries') || p.category.includes('Bakery');
-        } else if (activeCategory === 'Cold bar') {
-            categoryMatch = p.category.includes('Cold Brew') || p.category.includes('Frappes');
+        } else {
+            categoryMatch = p.category === activeCategory;
         }
-        
-        const searchMatch = !searchQuery || 
-                            p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+
+        const searchMatch = !searchQuery ||
+                            p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                             getRecipeDescription(p).toLowerCase().includes(searchQuery.toLowerCase());
-        
+
         return categoryMatch && searchMatch;
     });
 
     return (
-        <main className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-[var(--bg)] to-[color-mix(in_oklch,var(--surface)_82%,var(--accent-soft))] font-sans">
-            <div className="w-full max-w-[1280px] min-h-[820px] bg-[var(--surface)] border border-[var(--border)] rounded-[34px] shadow-[var(--shadow)] overflow-hidden">
+        <main className="h-screen max-h-screen overflow-hidden flex items-center justify-center p-0 lg:p-2 bg-[var(--bg)] font-sans">
+            <div className="w-full max-w-[1280px] h-full lg:h-[calc(100vh-16px)] bg-[var(--surface)] border-0 lg:border border-[var(--border)] rounded-none lg:rounded-[24px] shadow-[var(--shadow)] overflow-hidden flex flex-col">
                 {/* Workspace area */}
-                <div className="grid grid-rows-[86px_1fr] min-width-0">
-                    
+                <div className="flex-1 grid grid-rows-[auto_1fr] min-h-0">
+
                     {/* Header */}
-                    <header className="border-b border-[var(--border)] p-6.5 flex items-center justify-between gap-[18px]">
+                    <header className="border-b border-[var(--border)] py-3 px-4 lg:py-3.5 lg:px-5 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
                         <div>
-                            <h1 className="text-3xl font-display font-bold leading-none">Cashier orders</h1>
-                            <p className="text-[var(--muted)] text-sm mt-1">Tap items, take payment, and see change without extra steps.</p>
+                            <h1 className="text-xl sm:text-2xl font-display font-bold leading-none">Register</h1>
+                            <p className="text-[var(--muted)] text-xs mt-1">Build the order, take payment, and give change from one screen.</p>
                         </div>
-                        <div className="flex gap-2.5 items-center justify-end">
-                            <span className="min-h-[40px] inline-flex items-center gap-2 px-3 border border-[var(--border)] rounded-full text-[var(--muted)] bg-[var(--surface)] text-xs font-bold">
-                                <span className="w-2.5 h-2.5 rounded-full bg-[var(--ok)]"></span>
-                                Register online
+                        <div className="flex gap-2 items-center justify-start lg:justify-end flex-wrap">
+                            <span className="min-h-[36px] inline-flex items-center px-2.5 border border-[var(--border)] rounded-full text-[var(--muted)] bg-[var(--surface)] text-[11px] font-bold">
+                                Shift active
                             </span>
-                            <span className="num min-h-[40px] inline-flex items-center gap-2 px-3 border border-[var(--border)] rounded-full text-[var(--muted)] bg-[var(--surface)] text-xs font-bold">
+                            <span className="num min-h-[36px] inline-flex items-center gap-1.5 px-2.5 border border-[var(--border)] rounded-full text-[var(--muted)] bg-[var(--surface)] text-[11px] font-bold">
                                 {clock}
                             </span>
+                            <button
+                                type="button"
+                                onClick={() => router.push('/admin/inventory')}
+                                className="btn-secondary btn-pill inline-flex items-center border text-[11px] transition-all cursor-pointer"
+                            >
+                                Inventory
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => router.push('/admin/inventory?tab=reports')}
+                                className="btn-secondary btn-pill inline-flex items-center border text-[11px] transition-all cursor-pointer"
+                            >
+                                Sales history
+                            </button>
                             <LockButton />
                         </div>
                     </header>
 
                     {/* POS Split view */}
-                    <div className="grid grid-cols-1 xl:grid-cols-[1fr_360px] min-height-0">
+                    <div className="grid grid-cols-1 lg:grid-cols-[80px_1fr_360px] min-h-0">
+                        {/* Left Category Sidebar (hidden on mobile, vertical on lg+) */}
+                        <div className="hidden lg:flex lg:flex-col gap-2.5 border-r border-[var(--border)] p-1.5 bg-[color-mix(in_oklch,var(--bg)_20%,var(--surface))] overflow-y-auto no-scrollbar select-none">
+                            {CATEGORY_MAP.map(cat => (
+                                <button
+                                    key={cat.id}
+                                    onClick={() => setActiveCategory(cat.id)}
+                                    className={`w-full aspect-square border rounded-xl flex flex-col items-center justify-center p-1 text-center transition-all cursor-pointer leading-tight select-none ${
+                                        activeCategory === cat.id
+                                            ? 'btn-primary'
+                                            : 'btn-secondary'
+                                    }`}
+                                >
+                                    <span className="text-lg mb-0.5">{cat.icon}</span>
+                                    <span className="text-[10px] leading-tight tracking-tight break-words">{cat.label}</span>
+                                </button>
+                            ))}
+                        </div>
+
                         {/* Menu Catalog Grid */}
-                        <div className="p-5 flex flex-col gap-4 overflow-hidden min-width-0">
-                            {/* Categories Row */}
-                            <div className="flex gap-2.5 overflow-x-auto pb-1 no-scrollbar select-none">
-                                {categories.map(cat => (
+                        <div className="p-3 lg:p-4 flex flex-col gap-3 overflow-hidden min-w-0">
+                            {/* Categories Row (horizontal on mobile/tablet, hidden on lg+) */}
+                            <div className="flex lg:hidden gap-2 overflow-x-auto pb-1 no-scrollbar select-none">
+                                {CATEGORY_MAP.map(cat => (
                                     <button
-                                        key={cat}
-                                        onClick={() => setActiveCategory(cat)}
-                                        className={`min-h-[54px] min-w-[126px] border border-[var(--border)] rounded-2xl bg-[var(--surface)] text-[var(--muted)] font-extrabold text-xs transition-all cursor-pointer ${
-                                            activeCategory === cat ? 'text-[var(--fg)] border-[color-mix(in_oklch,var(--accent)_30%,var(--border))] bg-[var(--accent-soft)] shadow-sm' : 'hover:text-[var(--fg)]'
+                                        key={cat.id}
+                                        onClick={() => setActiveCategory(cat.id)}
+                                        className={`min-h-[40px] px-3.5 border rounded-xl bg-[var(--surface)] text-[var(--muted)] font-bold text-xs transition-all cursor-pointer flex items-center gap-1.5 shrink-0 whitespace-nowrap ${
+                                            activeCategory === cat.id
+                                                ? 'btn-primary'
+                                                : 'btn-secondary'
                                         }`}
                                     >
-                                        {cat}
+                                        <span>{cat.icon}</span>
+                                        <span>{cat.label}</span>
                                     </button>
                                 ))}
                             </div>
 
                             {/* Search and clears */}
-                            <div className="grid grid-cols-[1fr_148px] gap-3">
+                            <div className="grid grid-cols-[1fr_120px] gap-2.5">
                                 <input
                                     type="search"
+                                    aria-label="Search menu or ingredient"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     placeholder="Search menu or ingredient"
-                                    className="min-h-[58px] border border-[var(--border)] rounded-2xl p-4.5 bg-[var(--surface)] text-[var(--fg)] font-bold focus:outline-none focus:border-[var(--accent)] text-sm"
+                                    className="min-h-[44px] border border-[var(--border)] rounded-2xl px-4 bg-[var(--surface)] text-[var(--fg)] font-bold focus:outline-none focus:border-[var(--accent)] text-xs"
                                 />
                                 <button
                                     onClick={() => { setCart([]); setCashReceived(0); }}
-                                    className="min-h-[58px] rounded-2xl border border-[var(--border)] bg-[var(--surface)] text-[var(--fg)] font-extrabold text-sm transition-all hover:bg-[var(--fg-soft)] cursor-pointer"
+                                    className="btn-secondary min-h-[44px] rounded-2xl border text-xs transition-all cursor-pointer"
                                 >
-                                    Clear order
+                                    Clear
                                 </button>
                             </div>
 
                             {/* Menu cards */}
-                            <div className="flex-1 overflow-y-auto pr-1 no-scrollbar pb-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 align-content-start">
-                                {filteredProducts.map(product => {
+                            <div className="flex-1 overflow-y-auto pr-0.5 no-scrollbar pb-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3 align-content-start">
+                                {isCatalogLoading ? (
+                                    <div role="status" aria-live="polite" className="md:col-span-2 lg:col-span-2 xl:col-span-3 min-h-[180px] border border-[var(--border)] rounded-[20px] bg-[var(--surface)] flex flex-col items-center justify-center gap-2.5 text-[var(--muted)] text-xs font-bold">
+                                        <div className="animate-spin rounded-full h-7 w-7 border-b-2 border-[var(--accent)]"></div>
+                                        Loading menu items
+                                    </div>
+                                ) : catalogError ? (
+                                    <div role="alert" className="md:col-span-2 lg:col-span-2 xl:col-span-3 min-h-[180px] border border-[color-mix(in_oklch,var(--danger)_24%,var(--border))] rounded-[20px] bg-[color-mix(in_oklch,var(--danger)_8%,var(--surface))] flex flex-col items-center justify-center gap-1.5 text-center p-4">
+                                        <strong className="text-[var(--danger)] text-sm">Menu unavailable</strong>
+                                        <span className="text-[var(--muted)] text-xs">{catalogError}</span>
+                                    </div>
+                                ) : filteredProducts.length === 0 ? (
+                                    <div className="md:col-span-2 lg:col-span-2 xl:col-span-3 min-h-[180px] border border-[var(--border)] rounded-[20px] bg-[var(--surface)] flex flex-col items-center justify-center gap-1.5 text-center p-4">
+                                        <strong className="text-[var(--fg)] text-sm">No menu items found</strong>
+                                        <span className="text-[var(--muted)] text-xs">Try another category or clear the search field.</span>
+                                    </div>
+                                ) : filteredProducts.map(product => {
                                     const outOfStock = product.track_stock && (product.stock || 0) <= 0;
+                                    const isLowSupply = !outOfStock && Boolean(
+                                        product.recipe?.some(r => {
+                                            const ing = ingredients.find(i => i.id === r.ingredient_id);
+                                            if (!ing) return false;
+                                            if (ing.max_capacity && ing.max_capacity > 0) {
+                                                return (ing.stock / ing.max_capacity) < 0.1;
+                                            }
+                                            return ing.stock <= ing.min_threshold;
+                                        })
+                                    );
                                     return (
                                         <button
                                             key={product.id}
                                             disabled={outOfStock}
                                             onClick={() => handleProductClick(product)}
-                                            className={`min-h-[150px] border border-[var(--border)] rounded-[20px] bg-[var(--surface)] p-4 flex flex-col justify-between text-left transition-all active:translate-y-[1px] ${
-                                                outOfStock ? 'opacity-30 cursor-not-allowed' : 'hover:bg-[color-mix(in_oklch,var(--bg)_40%,var(--surface))] cursor-pointer'
+                                            className={`h-[114px] border rounded-[18px] bg-[var(--surface)] p-3 flex flex-col justify-between text-left transition-all active:translate-y-[1px] ${
+                                                outOfStock
+                                                    ? 'opacity-30 cursor-not-allowed border-[var(--border)]'
+                                                    : isLowSupply
+                                                        ? 'border-[var(--danger)] shadow-[0_0_6px_color-mix(in_oklch,var(--danger)_15%,transparent)] btn-tile cursor-pointer'
+                                                        : 'border-[var(--border)] btn-tile cursor-pointer'
                                             }`}
                                         >
-                                            <div className="space-y-1">
-                                                <strong className="block text-lg font-display text-[var(--fg)]">{product.name}</strong>
-                                                <small className="text-[var(--muted)] text-xs block mt-1 leading-tight line-clamp-2">{getRecipeDescription(product)}</small>
+                                            <div className="space-y-0.5 overflow-hidden">
+                                                <strong className="block text-sm font-bold text-[var(--fg)] leading-tight line-clamp-2">{product.name}</strong>
+                                                <small className="text-[var(--muted)] text-[10px] block leading-tight line-clamp-2">{getRecipeDescription(product)}</small>
                                             </div>
-                                            <div className="flex justify-between items-center mt-3">
-                                                <span className="text-[var(--accent)] font-black num text-base">{formatCurrency(product.price)}</span>
-                                                <em className="border border-[var(--border)] rounded-full px-2 py-1 text-[var(--muted)] text-[10px] font-extrabold not-italic bg-[var(--bg)]">
-                                                    {getStockDescription(product)}
+                                            <div className="flex justify-between items-center mt-1.5 pt-1 border-t border-[var(--border)] border-dashed w-full min-w-0">
+                                                <span className="text-[var(--accent)] font-black num text-sm truncate">{formatCurrency(product.price)}</span>
+                                                <em className={`border rounded-full px-1.5 py-0.5 text-[9px] font-bold not-italic truncate max-w-[50%] ${
+                                                    isLowSupply
+                                                        ? 'border-[color-mix(in_oklch,var(--danger)_30%,var(--border))] text-[var(--danger)] bg-[color-mix(in_oklch,var(--danger)_8%,var(--surface))] font-extrabold'
+                                                        : 'border-[var(--border)] text-[var(--muted)] bg-[var(--bg)]'
+                                                }`}>
+                                                    {isLowSupply ? '⚠️ Low Supply' : getStockDescription(product)}
                                                 </em>
                                             </div>
                                         </button>
@@ -411,40 +496,40 @@ export default function POSPage() {
                         </div>
 
                         {/* Cart Sidebar */}
-                        <aside className="border-l border-[var(--border)] bg-[color-mix(in_oklch,var(--bg)_52%,var(--surface))] grid grid-rows-[auto_1fr_auto] min-height-0">
+                        <aside className="border-t lg:border-t-0 lg:border-l border-[var(--border)] bg-[color-mix(in_oklch,var(--bg)_52%,var(--surface))] grid grid-rows-[auto_minmax(120px,1fr)_auto] min-h-0">
                             {/* Cart Header */}
-                            <div className="p-4.5 border-b border-[var(--border)] flex justify-between items-center">
+                            <div className="p-3.5 border-b border-[var(--border)] flex justify-between items-center">
                                 <div>
-                                    <p className="font-mono text-[var(--accent)] uppercase tracking-wider text-[10px] font-extrabold">Current sale</p>
-                                    <h2 className="text-2xl font-display font-bold text-[var(--fg)]">Current order</h2>
+                                    <p className="font-mono text-[var(--accent)] uppercase tracking-[0.08em] text-[9px] font-extrabold">Current sale</p>
+                                    <h2 className="text-xl font-display font-bold text-[var(--fg)]">Current order</h2>
                                 </div>
                             </div>
 
                             {/* Cart Item Rows */}
-                            <div className="overflow-y-auto p-4.5 space-y-3.5 no-scrollbar">
+                            <div className="overflow-y-auto p-3.5 space-y-2.5 no-scrollbar">
                                 {cart.length === 0 ? (
                                     <p className="text-[var(--muted)] py-4.5 text-center text-xs">Tap menu items to build the order.</p>
                                 ) : (
                                     cart.map(item => (
-                                        <div key={item.id} className="grid grid-cols-[1fr_auto] gap-3 py-3 border-b border-[var(--border)] items-center">
-                                            <div>
-                                                <strong className="block text-sm text-[var(--fg)]">{item.product.name}</strong>
-                                                <small className="text-[var(--muted)] text-[10px] leading-tight block mt-0.5">
+                                        <div key={item.id} className="grid grid-cols-[1fr_auto] gap-2.5 py-2.5 border-b border-[var(--border)] items-center">
+                                            <div className="min-w-0">
+                                                <strong className="block text-xs font-bold text-[var(--fg)] truncate">{item.product.name}</strong>
+                                                <small className="text-[var(--muted)] text-[9px] leading-tight block mt-0.5 truncate">
                                                     {item.customizations.length > 0 ? item.customizations.map(c => c.name).join(', ') : getRecipeDescription(item.product)}
                                                 </small>
-                                                {item.notes && <div className="text-[9px] text-[var(--accent)] italic">&quot;{item.notes}&quot;</div>}
+                                                {item.notes && <div className="text-[9px] text-[var(--accent)] italic truncate">&quot;{item.notes}&quot;</div>}
                                             </div>
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex items-center gap-2 shrink-0">
                                                 <button
                                                     onClick={() => updateQuantity(item.id, -1)}
-                                                    className="w-11 h-11 rounded-[14px] border border-[var(--border)] bg-[var(--surface)] text-lg font-black text-[var(--fg)] flex items-center justify-center cursor-pointer hover:bg-[var(--fg-soft)]"
+                                                    className="btn-key w-9 h-9 rounded-xl border text-base flex items-center justify-center cursor-pointer"
                                                 >
                                                     -
                                                 </button>
-                                                <span className="num text-xs font-bold w-6 text-center">{item.quantity}</span>
+                                                <span className="num text-xs font-bold w-5 text-center">{item.quantity}</span>
                                                 <button
                                                     onClick={() => updateQuantity(item.id, 1)}
-                                                    className="w-11 h-11 rounded-[14px] border border-[var(--border)] bg-[var(--surface)] text-lg font-black text-[var(--fg)] flex items-center justify-center cursor-pointer hover:bg-[var(--fg-soft)]"
+                                                    className="btn-key w-9 h-9 rounded-xl border text-base flex items-center justify-center cursor-pointer"
                                                 >
                                                     +
                                                 </button>
@@ -455,36 +540,102 @@ export default function POSPage() {
                             </div>
 
                             {/* Cart Totals & Checkout Panel */}
-                            <div className="border-t border-[var(--border)] p-4.5 bg-[var(--surface)] space-y-4">
-                                <div className="space-y-1.5 text-xs">
-                                    <div className="flex justify-between text-[var(--muted)]">
+                            <div className="border-t border-[var(--border)] p-2.5 bg-[var(--surface)] space-y-2">
+                                <div className="space-y-1 text-xs">
+                                    <div className="flex justify-between text-[var(--muted)] text-[10px]">
                                         <span>Subtotal</span>
-                                        <strong className="num text-xs font-bold text-[var(--fg)]">{formatCurrency(subtotal)}</strong>
+                                        <strong className="num text-[10px] font-bold text-[var(--fg)]">{formatCurrency(subtotal)}</strong>
                                     </div>
-                                    <div className="flex justify-between text-[var(--muted)]">
-                                        <span>Service (5%)</span>
-                                        <strong className="num text-xs font-bold text-[var(--fg)]">{formatCurrency(serviceFee)}</strong>
+                                    {discountPercent > 0 && (
+                                        <div className="flex justify-between text-[var(--danger)] text-[10px]">
+                                            <span>Discount ({discountPercent}%)</span>
+                                            <strong className="num text-[10px] font-bold text-[var(--danger)]">-{formatCurrency(discountAmount)}</strong>
+                                        </div>
+                                    )}
+                                    <div className="flex justify-between text-[var(--muted)] text-[10px]">
+                                        <span>VAT Tax (8%)</span>
+                                        <strong className="num text-[10px] font-bold text-[var(--fg)]">{formatCurrency(tax)}</strong>
                                     </div>
-                                    <div className="flex justify-between grand text-lg font-black text-[var(--fg)] pt-1 border-t border-[var(--border)] border-dashed">
+                                    <div className="flex justify-between grand text-sm font-black text-[var(--fg)] pt-1 border-t border-[var(--border)] border-dashed">
                                         <span>Total</span>
-                                        <strong className="num text-lg font-black">{formatCurrency(total)}</strong>
+                                        <strong className="num text-sm font-black">{formatCurrency(total)}</strong>
                                     </div>
+                                </div>
+
+                                {user && user.role !== 'barista' && (
+                                    <div className="flex items-center justify-between gap-2">
+                                        <label htmlFor="discount-select" className="text-[9px] font-bold text-[var(--muted)] uppercase tracking-[0.06em] shrink-0">Discount</label>
+                                        <select
+                                            id="discount-select"
+                                            value={discountPercent}
+                                            onChange={(e) => setDiscountPercent(parseInt(e.target.value, 10))}
+                                            className="px-2 py-1 bg-[var(--bg)] border border-[var(--border)] rounded-[8px] text-[10px] font-bold text-[var(--fg)] cursor-pointer focus:outline-none focus:border-[var(--accent)]"
+                                        >
+                                            <option value="0">No Discount</option>
+                                            <option value="10">10% Off</option>
+                                            <option value="20">20% Off</option>
+                                        </select>
+                                    </div>
+                                )}
+
+                                <div className="grid grid-cols-3 gap-1" aria-label="Dining option">
+                                    {(['dine-in', 'takeout', 'delivery'] as const).map(option => (
+                                        <button
+                                            key={option}
+                                            type="button"
+                                            aria-pressed={diningOption === option}
+                                            onClick={() => setDiningOption(option)}
+                                            className={`min-h-[30px] rounded-[8px] border text-[9px] font-black capitalize transition-all cursor-pointer ${
+                                                diningOption === option
+                                                    ? 'btn-segment'
+                                                    : 'btn-secondary'
+                                            }`}
+                                        >
+                                            {option.replace('-', ' ')}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                <div className={`grid grid-cols-2 gap-1 ${user?.role === 'barista' ? 'opacity-40 pointer-events-none' : ''}`} aria-label="Payment method">
+                                    {([
+                                        ['cash', 'Cash'],
+                                        ['qr', 'QR']
+                                    ] as const).map(([method, label]) => (
+                                        <button
+                                            key={method}
+                                            type="button"
+                                            aria-pressed={paymentMethod === method}
+                                            onClick={() => {
+                                                setPaymentMethod(method);
+                                                setErrorMessage('');
+                                            }}
+                                            className={`min-h-[30px] rounded-[8px] border text-[9px] font-black transition-all cursor-pointer ${
+                                                paymentMethod === method
+                                                    ? 'btn-segment'
+                                                    : 'btn-secondary'
+                                            }`}
+                                        >
+                                            {label}
+                                        </button>
+                                    ))}
                                 </div>
 
                                 {/* Errors if any */}
                                 {errorMessage && (
-                                    <div className="text-red-600 text-[10px] font-semibold bg-red-50 border border-red-200 px-3 py-1.5 rounded-xl text-center">
+                                    <div role="alert" className="text-[var(--danger)] text-[9px] font-semibold bg-[color-mix(in_oklch,var(--danger)_8%,var(--surface))] border border-[color-mix(in_oklch,var(--danger)_24%,var(--border))] px-3 py-1 rounded-xl text-center">
                                         {errorMessage}
                                     </div>
                                 )}
 
                                 {/* Cash flow selectors */}
-                                <div className="space-y-3.5 border-t border-[var(--border)] pt-3.5">
-                                    <div className="min-h-[58px] border border-[var(--border)] rounded-2xl flex items-center justify-between px-3.5 bg-[var(--surface)] focus-within:border-[var(--accent)] transition-all">
-                                        <span className="text-xs text-[var(--muted)] font-bold">Cash received</span>
-                                        <div className="flex items-center gap-1.5">
-                                            <span className="text-xs text-[var(--muted)] font-bold">PHP</span>
+                                {paymentMethod === 'cash' ? (
+                                <div className="space-y-1.5 border-t border-[var(--border)] pt-1.5">
+                                    <div className="min-h-[36px] border border-[var(--border)] rounded-lg flex items-center justify-between px-2.5 bg-[var(--surface)] focus-within:border-[var(--accent)] transition-all">
+                                        <label htmlFor="cash-received" className="text-[10px] text-[var(--muted)] font-bold">Cash received</label>
+                                        <div className="flex items-center gap-1">
+                                            <span className="text-[9px] text-[var(--muted)] font-bold">PHP</span>
                                             <input
+                                                id="cash-received"
                                                 type="number"
                                                 value={cashReceived === 0 ? '' : cashReceived}
                                                 onChange={(e) => {
@@ -492,54 +643,81 @@ export default function POSPage() {
                                                     setCashReceived(isNaN(val) ? 0 : val);
                                                 }}
                                                 placeholder="0"
-                                                className="num text-xl font-bold bg-transparent text-right outline-none w-28 text-[var(--fg)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                                className="num text-base font-bold bg-transparent text-right outline-none w-20 text-[var(--fg)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                             />
                                         </div>
                                     </div>
 
-                                    {/* Numeric cash buttons */}
-                                    <div className="grid grid-cols-4 gap-1.5">
-                                        {['1', '5', '10', '20', '50', '100', '200', '500', '1000'].map(val => (
+                                    {/* 3-column manual numeric keypad */}
+                                    <div className="grid grid-cols-3 gap-1">
+                                        {['7', '8', '9', '4', '5', '6', '1', '2', '3'].map(num => (
                                             <button
-                                                key={val}
+                                                key={num}
                                                 type="button"
-                                                onClick={() => handleQuickCash(val)}
-                                                className="min-h-[42px] border border-[var(--border)] rounded-[12px] bg-[var(--surface)] text-[var(--fg)] font-black text-xs cursor-pointer hover:bg-[var(--fg-soft)] active:scale-95 transition-all flex items-center justify-center"
+                                                onClick={() => handleKeypadInput(num)}
+                                                className="btn-key min-h-[32px] border rounded-[8px] text-xs cursor-pointer transition-all flex items-center justify-center"
                                             >
-                                                +{val}
+                                                {num}
                                             </button>
                                         ))}
                                         <button
                                             type="button"
-                                            onClick={() => handleQuickCash('exact')}
-                                            className="min-h-[42px] border border-[var(--border)] rounded-[12px] bg-[var(--surface)] text-[var(--fg)] font-black text-xs cursor-pointer hover:bg-[var(--fg-soft)] active:scale-95 transition-all flex items-center justify-center"
+                                            onClick={() => handleKeypadInput('C')}
+                                            className="btn-danger min-h-[32px] border rounded-[8px] text-xs cursor-pointer transition-all flex items-center justify-center"
                                         >
-                                            Exact
+                                            C
                                         </button>
                                         <button
                                             type="button"
-                                            onClick={() => handleQuickCash('clear')}
-                                            className="min-h-[42px] border border-[color-mix(in_oklch,var(--danger)_30%,var(--border))] rounded-[12px] bg-[color-mix(in_oklch,var(--danger)_8%,var(--surface))] text-[var(--danger)] font-black text-xs cursor-pointer hover:bg-[color-mix(in_oklch,var(--danger)_12%,var(--surface))] active:scale-95 transition-all flex items-center justify-center col-span-2"
+                                            onClick={() => handleKeypadInput('0')}
+                                            className="btn-key min-h-[32px] border rounded-[8px] text-xs cursor-pointer transition-all flex items-center justify-center"
                                         >
-                                            Clear
+                                            0
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleKeypadInput('⌫')}
+                                            aria-label="Delete last cash digit"
+                                            className="btn-key min-h-[32px] border rounded-[8px] text-xs cursor-pointer transition-all flex items-center justify-center"
+                                        >
+                                            Back
                                         </button>
                                     </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setCashReceived(total)}
+                                        className="btn-primary w-full min-h-[34px] border rounded-[8px] text-[10px] cursor-pointer transition-all flex items-center justify-center"
+                                    >
+                                        Exact Amount ({formatCurrency(total)})
+                                    </button>
 
                                     {/* Change readout */}
-                                    <div className="min-h-[58px] border border-[var(--border)] rounded-2xl flex items-center justify-between px-3.5 bg-[var(--surface)]">
-                                        <span className="text-xs text-[var(--muted)] font-bold">Change</span>
-                                        <strong className={`num text-xl font-bold ${changeDue >= 0 && total > 0 ? 'text-[var(--ok)]' : 'text-[var(--danger)]'}`}>
+                                    <div className="min-h-[36px] border border-[var(--border)] rounded-lg flex items-center justify-between px-2.5 bg-[var(--surface)]">
+                                        <span className="text-[10px] text-[var(--muted)] font-bold">Change</span>
+                                        <strong className={`num text-base font-bold ${changeDue >= 0 && total > 0 ? 'text-[var(--ok)]' : 'text-[var(--danger)]'}`}>
                                             {changeDue >= 0 && total > 0 ? formatCurrency(changeDue) : `${formatCurrency(Math.abs(changeDue))} short`}
                                         </strong>
                                     </div>
                                 </div>
+                                ) : (
+                                    <div className="min-h-[36px] border border-[var(--border)] rounded-lg flex items-center justify-between px-2.5 bg-[var(--surface)]">
+                                        <span className="text-[10px] text-[var(--muted)] font-bold">QR payment</span>
+                                        <strong className="text-xs text-[var(--fg)]">Confirm on terminal</strong>
+                                    </div>
+                                )}
+
+                                {user && user.role === 'barista' && (
+                                    <div role="alert" className="text-[var(--danger)] text-[9px] font-semibold bg-[color-mix(in_oklch,var(--danger)_8%,var(--surface))] border border-[color-mix(in_oklch,var(--danger)_24%,var(--border))] px-3 py-1 rounded-xl text-center">
+                                        Barista role is locked from cash register and payment actions.
+                                    </div>
+                                )}
 
                                 <button
                                     onClick={handleCheckoutSubmit}
-                                    disabled={cart.length === 0 || isSubmittingOrder || (paymentMethod === 'cash' && cashReceived < total)}
-                                    className="w-full min-h-[58px] rounded-2xl border border-[var(--accent)] bg-[var(--accent)] text-[var(--surface)] text-sm font-extrabold hover:opacity-90 disabled:opacity-40 transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                                    disabled={cart.length === 0 || isSubmittingOrder || user?.role === 'barista' || (paymentMethod === 'cash' && cashReceived < total)}
+                                    className="btn-primary w-full min-h-[46px] rounded-xl border text-xs disabled:opacity-40 transition-all cursor-pointer flex items-center justify-center gap-1.5"
                                 >
-                                    {isSubmittingOrder ? 'Processing...' : 'Send order to barista'}
+                                    {user?.role === 'barista' ? 'Checkout Locked' : isSubmittingOrder ? 'Processing...' : 'Complete sale'}
                                 </button>
                             </div>
                         </aside>
@@ -550,100 +728,175 @@ export default function POSPage() {
             {/* Customization Modal */}
             {customizingProduct && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-[var(--surface)] rounded-3xl w-full max-w-lg border border-[var(--border)] shadow-2xl overflow-hidden">
+                    <div role="dialog" aria-modal="true" aria-labelledby="customize-title" className="bg-[var(--surface)] rounded-[20px] w-full max-w-lg border border-[var(--border)] shadow-[var(--shadow)] overflow-hidden">
                         <div className="p-6 border-b border-[var(--border)] flex justify-between items-center">
                             <div>
-                                <h3 className="font-display font-bold text-lg text-[var(--fg)]">{customizingProduct.name}</h3>
+                                <h3 id="customize-title" className="font-display font-bold text-lg text-[var(--fg)]">{customizingProduct.name}</h3>
                                 <p className="text-[10px] text-[var(--muted)]">Choose size, milk, extras, and notes</p>
                             </div>
                             <button
+                                type="button"
+                                aria-label="Close customization"
                                 onClick={() => setCustomizingProduct(null)}
-                                className="w-8 h-8 rounded-full bg-[var(--bg)] text-[var(--muted)] hover:text-[var(--fg)] transition-all flex items-center justify-center cursor-pointer font-bold"
+                                className="btn-secondary w-8 h-8 rounded-full border transition-all flex items-center justify-center cursor-pointer text-xs"
                             >
-                                ✕
+                                x
                             </button>
                         </div>
 
                         <div className="p-6 space-y-5 overflow-y-auto max-h-[60vh] no-scrollbar">
                             {/* Size Selection */}
-                            <div className="space-y-2">
-                                <label className="text-xs font-semibold text-[var(--fg)]/80">Select Size</label>
-                                <div className="grid grid-cols-3 gap-2">
-                                    {[
-                                        { name: 'Small', label: 'Small (8oz)', price: '-₱20.00' },
-                                        { name: 'Medium', label: 'Medium (12oz)', price: 'Base' },
-                                        { name: 'Large', label: 'Large (16oz)', price: '+₱25.00' }
-                                    ].map((s) => (
-                                        <button
-                                            key={s.name}
-                                            type="button"
-                                            onClick={() => setCustomSize(s.name)}
-                                            className={`p-3 rounded-xl border text-center transition-all cursor-pointer flex flex-col gap-0.5 ${
-                                                customSize === s.name
-                                                    ? 'bg-[var(--accent-soft)] border-[var(--accent)] text-[var(--accent)]'
-                                                    : 'bg-[var(--surface)] border-[var(--border)] text-[var(--muted)] hover:text-[var(--fg)]'
-                                            }`}
-                                        >
-                                            <span className="text-xs font-bold">{s.label}</span>
-                                            <span className="text-[9px] opacity-75">{s.price}</span>
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Milk Selection */}
-                            <div className="space-y-2">
-                                <label className="text-xs font-semibold text-[var(--fg)]/80">Milk Choice</label>
-                                <div className="grid grid-cols-3 gap-2">
-                                    {[
-                                        { name: 'Whole Milk', price: 'Base' },
-                                        { name: 'Oat Milk', price: '+₱35.00' },
-                                        { name: 'Almond Milk', price: '+₱35.00' }
-                                    ].map((m) => (
-                                        <button
-                                            key={m.name}
-                                            type="button"
-                                            onClick={() => setCustomMilk(m.name)}
-                                            className={`p-3 rounded-xl border text-center transition-all cursor-pointer flex flex-col gap-0.5 ${
-                                                customMilk === m.name
-                                                    ? 'bg-[var(--accent-soft)] border-[var(--accent)] text-[var(--accent)]'
-                                                    : 'bg-[var(--surface)] border-[var(--border)] text-[var(--muted)] hover:text-[var(--fg)]'
-                                            }`}
-                                        >
-                                            <span className="text-xs font-bold">{m.name}</span>
-                                            <span className="text-[9px] opacity-75">{m.price}</span>
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Extra Espresso Shots */}
-                            <div className="space-y-2">
-                                <label className="text-xs font-semibold text-[var(--fg)]/80 flex justify-between">
-                                    <span>Extra Espresso Shots</span>
-                                    <span className="text-[10px] text-[var(--accent)] font-bold">+₱30.00 per shot</span>
-                                </label>
-                                <div className="flex items-center gap-3 bg-[var(--bg)] p-3 rounded-xl justify-between border border-[var(--border)]">
-                                    <span className="text-xs font-bold text-[var(--fg)]">Add Espresso Shots</span>
-                                    <div className="flex items-center gap-3 bg-[var(--surface)] border border-[var(--border)] p-1 rounded-lg">
-                                        <button
-                                            type="button"
-                                            onClick={() => setCustomShots(prev => Math.max(0, prev - 1))}
-                                            className="w-8 h-8 flex items-center justify-center hover:bg-[var(--fg-soft)] rounded text-[var(--muted)] hover:text-[var(--fg)] cursor-pointer font-bold text-sm"
-                                        >
-                                            -
-                                        </button>
-                                        <span className="text-sm font-bold w-6 text-center text-[var(--fg)]">{customShots}</span>
-                                        <button
-                                            type="button"
-                                            onClick={() => setCustomShots(prev => Math.min(4, prev + 1))}
-                                            className="w-8 h-8 flex items-center justify-center hover:bg-[var(--fg-soft)] rounded text-[var(--muted)] hover:text-[var(--fg)] cursor-pointer font-bold text-sm"
-                                        >
-                                            +
-                                        </button>
+                            {customizingProduct.category === 'Pastries' ? (
+                                <div className="space-y-2">
+                                    <label className="text-xs font-semibold text-[var(--fg)]/80">Select Option</label>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {[
+                                            { name: 'Single', label: 'Single Piece', price: 'Base' },
+                                            { name: 'Pack of 6', label: 'Pack of 6', price: customizingProduct.name.includes('Classic') ? '+₱105.00' : '+₱115.00' }
+                                        ].map((s) => (
+                                            <button
+                                                key={s.name}
+                                                type="button"
+                                                onClick={() => setCustomSize(s.name)}
+                                                    className={`p-3 rounded-xl border text-center transition-all cursor-pointer flex flex-col gap-0.5 ${
+                                                        customSize === s.name
+                                                        ? 'btn-primary'
+                                                        : 'btn-secondary'
+                                                }`}
+                                            >
+                                                <span className="text-xs font-bold">{s.label}</span>
+                                                <span className="text-[9px] opacity-75">{s.price}</span>
+                                            </button>
+                                        ))}
                                     </div>
                                 </div>
-                            </div>
+                            ) : customizingProduct.category === 'Hot Coffee' ? (
+                                <div className="space-y-2">
+                                    <label className="text-xs font-semibold text-[var(--fg)]/80">Select Size</label>
+                                    <div className="grid grid-cols-1 gap-2">
+                                        {[
+                                            { name: '8oz', label: 'Hot (8oz)', price: 'Base' }
+                                        ].map((s) => (
+                                            <button
+                                                key={s.name}
+                                                type="button"
+                                                disabled
+                                                className="btn-primary p-3 rounded-xl border text-center flex flex-col gap-0.5 disabled:opacity-80"
+                                            >
+                                                <span className="text-xs font-bold">{s.label}</span>
+                                                <span className="text-[9px] opacity-75">{s.price}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="space-y-2">
+                                    <label className="text-xs font-semibold text-[var(--fg)]/80">Select Size</label>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {[
+                                            { name: '16oz', label: 'Iced (16oz)', price: 'Base' },
+                                            { name: '22oz', label: 'Iced (22oz)', price: (customizingProduct.name.includes('Mocha Latte\'') && customizingProduct.category.includes('Classic')) || (customizingProduct.name.includes('Seasalt Latte\'') && customizingProduct.category.includes('Classic')) || customizingProduct.name.includes('Milo Matcha') ? '+₱30.00' : customizingProduct.name.includes('Cookies & Cream Cloud') || customizingProduct.name.includes('Blueberry Cloud') ? '+₱10.00' : '+₱20.00' }
+                                        ].map((s) => (
+                                            <button
+                                                key={s.name}
+                                                type="button"
+                                                onClick={() => setCustomSize(s.name)}
+                                                    className={`p-3 rounded-xl border text-center transition-all cursor-pointer flex flex-col gap-0.5 ${
+                                                        customSize === s.name
+                                                        ? 'btn-primary'
+                                                        : 'btn-secondary'
+                                                }`}
+                                            >
+                                                <span className="text-xs font-bold">{s.label}</span>
+                                                <span className="text-[9px] opacity-75">{s.price}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {customizingProduct.category !== 'Pastries' && (
+                                <>
+                                    {/* Extra Espresso Shots */}
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-semibold text-[var(--fg)]/80 flex justify-between">
+                                            <span>Extra Espresso Shots</span>
+                                            <span className="text-[10px] text-[var(--accent)] font-bold">+₱39.00 per shot</span>
+                                        </label>
+                                        <div className="flex items-center gap-3 bg-[var(--bg)] p-3 rounded-xl justify-between border border-[var(--border)]">
+                                            <span className="text-xs font-bold text-[var(--fg)]">Add Espresso Shots</span>
+                                            <div className="flex items-center gap-3 bg-[var(--surface)] border border-[var(--border)] p-1 rounded-lg">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setCustomShots(prev => Math.max(0, prev - 1))}
+                                                    className="btn-key w-8 h-8 border flex items-center justify-center rounded cursor-pointer text-sm"
+                                                >
+                                                    -
+                                                </button>
+                                                <span className="text-sm font-bold w-6 text-center text-[var(--fg)]">{customShots}</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setCustomShots(prev => Math.min(4, prev + 1))}
+                                                    className="btn-key w-8 h-8 border flex items-center justify-center rounded cursor-pointer text-sm"
+                                                >
+                                                    +
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Syrups & Sauces Selection */}
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-semibold text-[var(--fg)]/80">Syrups & Sauces (+₱29.00 each)</label>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {['Caramel Sauce', 'Chocolate Sauce'].map((syrup) => {
+                                                const isSelected = customSyrups.includes(syrup);
+                                                return (
+                                                    <button
+                                                        key={syrup}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            if (isSelected) {
+                                                                setCustomSyrups(prev => prev.filter(s => s !== syrup));
+                                                            } else {
+                                                                setCustomSyrups(prev => [...prev, syrup]);
+                                                            }
+                                                        }}
+                                                        className={`p-3 rounded-xl border text-center transition-all cursor-pointer flex flex-col gap-0.5 ${
+                                                            isSelected
+                                                                ? 'btn-primary'
+                                                                : 'btn-secondary'
+                                                        }`}
+                                                    >
+                                                        <span className="text-xs font-bold">{syrup}</span>
+                                                        <span className="text-[9px] opacity-75">+₱29.00</span>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+
+                                    {/* Extra Cream Choice */}
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-semibold text-[var(--fg)]/80 flex justify-between">
+                                            <span>Extra Cream</span>
+                                            <span className="text-[10px] text-[var(--accent)] font-bold">+₱29.00</span>
+                                        </label>
+                                        <button
+                                            type="button"
+                                            onClick={() => setCustomCream(prev => !prev)}
+                                            className={`w-full p-3 rounded-xl border text-center transition-all cursor-pointer flex justify-between items-center ${
+                                                customCream
+                                                    ? 'btn-primary font-bold'
+                                                    : 'btn-secondary'
+                                            }`}
+                                        >
+                                            <span className="text-xs text-[var(--fg)]">Add Extra Cream</span>
+                                            <span className="text-xs">{customCream ? 'Selected' : 'None'}</span>
+                                        </button>
+                                    </div>
+                                </>
+                            )}
 
                             {/* Order Notes */}
                             <div className="space-y-1.5">
@@ -663,14 +916,14 @@ export default function POSPage() {
                             <button
                                 type="button"
                                 onClick={() => setCustomizingProduct(null)}
-                                className="flex-1 py-3 bg-[var(--surface)] border border-[var(--border)] hover:bg-[var(--fg-soft)] text-[var(--muted)] font-semibold rounded-xl text-xs transition-all cursor-pointer"
+                                className="btn-secondary flex-1 py-3 border rounded-xl text-xs transition-all cursor-pointer"
                             >
                                 Cancel
                             </button>
                             <button
                                 type="button"
                                 onClick={handleAddCustomized}
-                                className="flex-1 py-3 bg-[var(--accent)] hover:opacity-90 text-[var(--surface)] font-bold rounded-xl text-xs transition-all cursor-pointer"
+                                className="btn-primary flex-1 py-3 border rounded-xl text-xs transition-all cursor-pointer"
                             >
                                 Add to Order
                             </button>
@@ -679,112 +932,63 @@ export default function POSPage() {
                 </div>
             )}
 
-            {/* Receipt Modal (Printable) */}
+            {/* Sale Confirmation Modal */}
             {completedOrder && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-white text-black p-6 rounded-3xl w-full max-w-sm border shadow-2xl flex flex-col justify-between relative">
+                    <div role="dialog" aria-modal="true" aria-labelledby="sale-complete-title" className="bg-[var(--surface)] text-[var(--fg)] p-6 rounded-[20px] w-full max-w-sm border border-[var(--border)] shadow-[var(--shadow)] flex flex-col justify-between relative">
                         <button
+                            type="button"
                             onClick={() => setCompletedOrder(null)}
-                            className="absolute top-4 right-4 w-8 h-8 rounded-full bg-black/5 hover:bg-black/10 text-black/50 hover:text-black transition-all flex items-center justify-center cursor-pointer no-print font-bold"
+                            className="btn-secondary absolute top-4 right-4 min-h-8 px-3 rounded-full border transition-all flex items-center justify-center cursor-pointer text-xs"
                         >
-                            ✕
+                            Close
                         </button>
 
-                        {/* Printable Area */}
-                        <div id="receipt-print-area" className="space-y-4 font-mono text-xs">
-                            <div className="text-center space-y-1">
-                                <h2 className="font-display font-bold text-lg leading-tight uppercase">TALA TABLE COFFEE</h2>
-                                <p className="text-[10px] text-zinc-500">123 Brew Road, Metro Manila</p>
+                        <div className="space-y-5">
+                            <div className="text-center space-y-2">
+                                <div className="mx-auto w-14 h-14 rounded-2xl bg-[color-mix(in_oklch,var(--ok)_14%,var(--surface))] text-[var(--ok)] border border-[color-mix(in_oklch,var(--ok)_28%,var(--border))] flex items-center justify-center">
+                                    <svg className="w-8 h-8 stroke-[2]" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                        <path d="m5 13 4 4L19 7" strokeLinecap="round" strokeLinejoin="round"/>
+                                    </svg>
+                                </div>
+                                <h2 id="sale-complete-title" className="font-display font-bold text-2xl leading-tight">Sale completed</h2>
+                                <p className="text-xs text-[var(--muted)]">
+                                    {completedOrder.order_number} was recorded in sales history.
+                                </p>
                             </div>
 
-                            <div className="border-t border-b border-black border-dashed py-2 space-y-1 text-[10px]">
+                            <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg)] p-4 space-y-3 text-xs">
                                 <div className="flex justify-between">
-                                    <span>Date: {new Date(completedOrder.created_at).toLocaleDateString()}</span>
-                                    <span>Time: {new Date(completedOrder.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                    <span className="text-[var(--muted)]">Items sold</span>
+                                    <strong className="num">{completedOrder.items.reduce((sum, item) => sum + item.quantity, 0)}</strong>
                                 </div>
                                 <div className="flex justify-between">
-                                    <span>Order Ref: {completedOrder.order_number}</span>
-                                    <span className="capitalize">Mode: {completedOrder.dining_option}</span>
+                                    <span className="text-[var(--muted)]">Payment</span>
+                                    <strong className="capitalize">{completedOrder.payment_method}</strong>
                                 </div>
-                                <div>Cashier ID: {completedOrder.created_by}</div>
-                            </div>
-
-                            <table className="w-full border-collapse text-[10px]">
-                                <thead>
-                                    <tr className="border-b border-black font-bold text-left">
-                                        <th className="pb-1">Item</th>
-                                        <th className="pb-1 text-center">Qty</th>
-                                        <th className="pb-1 text-right">Price</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {completedOrder.items.map((item, i) => (
-                                        <tr key={i} className="align-top">
-                                            <td className="py-1">
-                                                <div>{item.name}</div>
-                                                {item.customizations?.length > 0 && (
-                                                    <div className="text-[8px] text-zinc-500 leading-tight">
-                                                        {item.customizations.map(c => c.name).join(', ')}
-                                                    </div>
-                                                )}
-                                            </td>
-                                            <td className="py-1 text-center">{item.quantity}</td>
-                                            <td className="py-1 text-right">{formatCurrency(item.price * item.quantity)}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-
-                            <div className="border-t border-black border-dashed pt-2 space-y-1 text-[10px]">
-                                <div className="flex justify-between">
-                                    <span>Subtotal</span>
-                                    <span>{formatCurrency(completedOrder.subtotal)}</span>
-                                </div>
-                                {completedOrder.discount > 0 && (
-                                    <div className="flex justify-between text-zinc-600">
-                                        <span>Discount Given</span>
-                                        <span>-{formatCurrency(completedOrder.discount)}</span>
+                                {completedOrder.payment_method === 'cash' && completedOrder.payment_details && (
+                                    <div className="flex justify-between">
+                                        <span className="text-[var(--muted)]">Change given</span>
+                                        <strong className="num">{formatCurrency(completedOrder.payment_details.change_returned ?? 0)}</strong>
                                     </div>
                                 )}
-                                <div className="flex justify-between font-bold text-sm pt-1 border-t border-black">
-                                    <span>TOTAL</span>
-                                    <span>{formatCurrency(completedOrder.total)}</span>
+                                <div className="flex justify-between border-t border-[var(--border)] pt-3">
+                                    <span className="text-[var(--muted)]">Sale total</span>
+                                    <strong className="num text-lg">{formatCurrency(completedOrder.total)}</strong>
                                 </div>
-                            </div>
-
-                            {completedOrder.payment_method === 'cash' && completedOrder.payment_details && (
-                                <div className="space-y-1 text-[10px] border-t border-dashed border-zinc-300 pt-2 text-zinc-600">
-                                    <div className="flex justify-between">
-                                        <span>Amount Tendered</span>
-                                        <span>{formatCurrency(completedOrder.payment_details.amount_tendered ?? 0)}</span>
-                                    </div>
-                                    <div className="flex justify-between text-black font-bold">
-                                        <span>Change Returned</span>
-                                        <span>{formatCurrency(completedOrder.payment_details.change_returned ?? 0)}</span>
-                                    </div>
-                                </div>
-                            )}
-
-                            <div className="text-center pt-4 border-t border-black border-dashed space-y-1 text-[9px] text-zinc-500">
-                                <p className="font-semibold">Thank you for supporting local business!</p>
-                                <p>Follow us on Instagram @TalaTableCoffee</p>
                             </div>
                         </div>
 
-                        {/* Action Buttons */}
-                        <div className="flex gap-2 mt-6 no-print">
+                        <div className="flex gap-2 mt-6">
                             <button
-                                onClick={() => window.print()}
-                                className="flex-1 py-3 bg-zinc-900 hover:bg-zinc-800 text-white font-bold rounded-xl text-xs shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                                onClick={() => router.push('/admin/inventory?tab=reports')}
+                                className="btn-secondary flex-1 py-3 border rounded-xl text-xs transition-all cursor-pointer text-center"
                             >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
-                                </svg>
-                                Print Receipt
+                                Sales history
                             </button>
                             <button
                                 onClick={() => setCompletedOrder(null)}
-                                className="flex-1 py-3 bg-[var(--accent)] hover:opacity-90 text-[var(--surface)] font-bold rounded-xl text-xs shadow-md transition-all cursor-pointer text-center"
+                                className="btn-primary flex-1 py-3 border rounded-xl text-xs transition-all cursor-pointer text-center"
                             >
                                 New Order
                             </button>
@@ -792,27 +996,6 @@ export default function POSPage() {
                     </div>
                 </div>
             )}
-
-            {/* Print Styles */}
-            <style jsx global>{`
-                @media print {
-                    body * {
-                        visibility: hidden;
-                    }
-                    #receipt-print-area, #receipt-print-area * {
-                        visibility: visible;
-                    }
-                    #receipt-print-area {
-                        position: absolute;
-                        left: 0;
-                        top: 0;
-                        width: 100%;
-                    }
-                    .no-print {
-                        display: none !important;
-                    }
-                }
-            `}</style>
         </main>
     );
 }

@@ -1,0 +1,44 @@
+"Timestamp","Owner / Contact Name","Contact Email","Contact Phone","Currency","Standard Tax Rate (%)(Optional)","Receipt Footer Message(optional)","Number of active tablet screens","Est. Daily Transactions","Order Types Offered","Typical Product Categories (Check all that apply)","Milk Selection Options & Extra Pricing","Sweeteners / Syrups Options & Extra Pricing","Espresso Additions & Extra Pricing","Do you need Supplier Purchase Order management?","Accepted Payment Methods","Discounts & Promotions Supported","Passcode Sign-in Requirements & Custom Permissions per Role","Primary POS Tablet Device","Receipt Printer Type(Optional)","Cash Drawer Trigger","Internet Stability & Offline Support"
+"2026/06/17 12:04:48 PM GMT+8","Jirlie Granada ","granadajirlie@gmail.com","09516352625","PHP (₱)","8%","N/A","1","150","Dine-in / Table Service;Takeout / To-Go;Delivery Integration","Espresso / Hot Coffee;Cold Brew / Iced Coffee;Non-Coffee (Tea, Matcha);Pastries & Bakery Items","We don't have options milk. ","Also this one. but, we have caramel and chocolate sauce that cost: 29 ","Extra shot: 39 ","Yes, basic PO tracking (Supplier list, ordered quantity, received quantity).","Cash (with quick change calculator);Mobile/QR Payments (Gcash, Maya, Venmo, etc.)","Percentage Discount (e.g., 10% Off);Maybe next month we have loyalty card","* Cashier
+Allowed:
+Process sales, returns, and exchanges
+Apply basic discounts (fixed percentage only)
+Open/close cash drawer
+View own transaction history
+Not Allowed:
+Edit product prices
+Access sales reports
+Issue refunds over ₱500
+Add/remove users
+* Barista
+Allowed:
+Record orders and mark items as prepared
+View menu and inventory levels (read-only)
+Request stock replenishment
+Clock in/out
+Not Allowed:
+Handle cash or payments
+Modify menu items
+View financial data
+Access user settings
+* Manager
+Allowed:
+All Cashier + Barista permissions
+Issue full refunds and custom discounts
+Edit product prices and inventory
+Generate daily/weekly sales reports
+Reset passcodes for Cashiers/Baristas
+Open/close the store system
+Not Allowed:
+Create or delete Admin accounts
+Change system-wide security settings
+Access payroll data
+* Admin
+Allowed:
+All permissions from all roles
+Create, edit, or delete any user account
+Set/modify all passcode rules and security policies
+Access all reports, logs, and financial data
+Configure system settings and integrations
+Manage user roles and permissions
+No restrictions on system access or actions","Huawei","Bluetooth Thermal Printer","Manual Key Lock open only","Always online"

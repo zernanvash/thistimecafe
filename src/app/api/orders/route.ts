@@ -8,6 +8,11 @@ import { Order, OrderItem } from '@/db/schema';
 export async function GET(req: NextRequest) {
     try {
         await ensureDb();
+        const session = await getSession(req);
+        if (!session) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
         const { searchParams } = new URL(req.url);
         const statusParam = searchParams.get('status');
         const limitParam = searchParams.get('limit');
@@ -15,7 +20,10 @@ export async function GET(req: NextRequest) {
         const status = statusParam ? (statusParam.split(',') as any[]) : undefined;
         const limit = limitParam ? parseInt(limitParam, 10) : undefined;
 
-        const orders = await db.orders.list({ status, limit });
+        let orders = await db.orders.list({ status, limit });
+        if (session.role === 'cashier') {
+            orders = orders.filter(o => o.created_by === session.userId);
+        }
         return NextResponse.json(orders);
     } catch (error: any) {
         console.error('Fetch orders error:', error);
@@ -30,6 +38,10 @@ export async function POST(req: NextRequest) {
         const session = await getSession(req);
         if (!session) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        if (session.role === 'barista') {
+            return NextResponse.json({ error: 'Baristas are not allowed to checkout orders' }, { status: 403 });
         }
 
         const body = await req.json();
@@ -142,9 +154,9 @@ export async function POST(req: NextRequest) {
             }
         }
 
-        // Calculate Tax (e.g. 12% standard rate included in checkout, or added on top. Let's make it 12% standard included in subtotal or calculated from subtotal after discount)
+        // Calculate Tax (e.g. 8% standard rate included in checkout, or added on top. Let's make it 8% standard included in subtotal or calculated from subtotal after discount)
         const taxableAmount = Math.max(0, subtotal - discount);
-        const taxRate = 0.12;
+        const taxRate = 0.08;
         const tax = Math.round(taxableAmount * taxRate * 100) / 100;
         const total = taxableAmount;
 
@@ -184,7 +196,7 @@ export async function POST(req: NextRequest) {
             tax,
             discount,
             total,
-            status: 'pending', // Order starts as pending (sent to barista KDS)
+            status: 'completed',
             payment_method,
             created_at: new Date().toISOString(),
             created_by: session.userId,

@@ -3,6 +3,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import BrandMark from '@/components/BrandMark';
 
 export default function AdminLoginPage() {
     const router = useRouter();
@@ -57,8 +58,8 @@ export default function AdminLoginPage() {
         <main className="min-h-screen flex items-center justify-center p-3 sm:p-4 bg-[var(--bg)] font-sans">
             <section className="w-full max-w-[460px] bg-[var(--surface)] border border-[var(--border)] rounded-[18px] sm:rounded-[24px] shadow-[var(--shadow)] overflow-hidden">
                 <header className="px-5 sm:px-7 py-5 sm:py-6 border-b border-[var(--border)] flex items-center justify-between gap-4">
-                    <div>
-                        <p className="font-mono text-[var(--accent)] uppercase tracking-[0.08em] text-xs font-extrabold mb-1">Tala Table Coffee</p>
+                    <div className="space-y-3">
+                        <BrandMark />
                         <h1 className="text-2xl sm:text-3xl font-display font-bold leading-none text-[var(--fg)]">Admin Login</h1>
                     </div>
                     <span className="num min-h-[40px] inline-flex items-center px-3 border border-[var(--border)] rounded-full text-[var(--muted)] bg-[var(--surface)] text-xs font-bold">

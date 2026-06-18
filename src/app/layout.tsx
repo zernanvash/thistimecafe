@@ -9,8 +9,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "TTC Coffee POS Terminal",
-  description: "Touch-optimized POS and stock system for neighborhood cafes.",
+  title: "This Time, Cafe' POS Terminal",
+  description: "Touch-optimized POS and stock system for This Time, Cafe'.",
 };
 
 export default function RootLayout({

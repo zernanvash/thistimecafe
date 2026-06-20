@@ -35,6 +35,7 @@ export default function POSPage() {
     const [activeCategory, setActiveCategory] = useState<string>('All items');
     const [searchQuery, setSearchQuery] = useState<string>('');
     const [clock, setClock] = useState<string>('08:42');
+    const [activeTab, setActiveTab] = useState<'menu' | 'cart'>('menu');
 
     // Cart and order details
     const [cart, setCart] = useState<CartItem[]>([]);
@@ -348,41 +349,54 @@ export default function POSPage() {
                 <div className="flex-1 grid grid-rows-[auto_1fr] min-h-0">
 
                     {/* Header */}
-                    <header className="border-b border-[var(--border)] py-3 px-4 lg:py-3.5 lg:px-5 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-                        <div className="flex items-center gap-3 min-w-0">
+                    <header className="border-b border-[var(--border)] py-2.5 px-3 sm:py-3.5 sm:px-5 flex flex-row items-center justify-between gap-2.5">
+                        <div className="flex items-center gap-2.5 min-w-0">
                             <BrandMark compact />
                             <div className="min-w-0">
-                                <h1 className="text-xl sm:text-2xl font-display font-bold leading-none">Register</h1>
-                                <p className="text-[var(--muted)] text-xs mt-1">Build the order, take payment, and give change from one screen.</p>
+                                <h1 className="text-lg sm:text-2xl font-display font-bold leading-none">Register</h1>
+                                <p className="hidden sm:block text-[var(--muted)] text-xs mt-1">Build the order, take payment, and give change from one screen.</p>
                             </div>
                         </div>
-                        <div className="flex gap-2 items-center justify-start lg:justify-end flex-wrap">
-                            <span className="min-h-[36px] inline-flex items-center px-2.5 border border-[var(--border)] rounded-full text-[var(--muted)] bg-[var(--surface)] text-[11px] font-bold">
+                        <div className="flex gap-1.5 sm:gap-2 items-center justify-end">
+                            <span className="hidden md:inline-flex min-h-[36px] items-center px-2.5 border border-[var(--border)] rounded-full text-[var(--muted)] bg-[var(--surface)] text-[11px] font-bold">
                                 Shift active
                             </span>
-                            <span className="num min-h-[36px] inline-flex items-center gap-1.5 px-2.5 border border-[var(--border)] rounded-full text-[var(--muted)] bg-[var(--surface)] text-[11px] font-bold">
+                            <span className="num min-h-[36px] hidden sm:inline-flex items-center gap-1.5 px-2.5 border border-[var(--border)] rounded-full text-[var(--muted)] bg-[var(--surface)] text-[11px] font-bold">
                                 {clock}
                             </span>
                             <button
                                 type="button"
-                                onClick={() => router.push('/admin/inventory')}
-                                className="btn-secondary btn-pill inline-flex items-center border text-[11px] transition-all cursor-pointer"
+                                onClick={() => router.push('/')}
+                                className="btn-secondary btn-pill inline-flex items-center border text-[11px] transition-all cursor-pointer px-2.5 min-h-[36px]"
+                                aria-label="Home"
                             >
-                                Inventory
+                                <span>🏠</span>
+                                <span className="hidden sm:inline ml-1">Home</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => router.push('/admin/inventory')}
+                                className="btn-secondary btn-pill inline-flex items-center border text-[11px] transition-all cursor-pointer px-2.5 min-h-[36px]"
+                                aria-label="Inventory"
+                            >
+                                <span>📦</span>
+                                <span className="hidden sm:inline ml-1">Inventory</span>
                             </button>
                             <button
                                 type="button"
                                 onClick={() => router.push('/admin/inventory?tab=reports')}
-                                className="btn-secondary btn-pill inline-flex items-center border text-[11px] transition-all cursor-pointer"
+                                className="btn-secondary btn-pill inline-flex items-center border text-[11px] transition-all cursor-pointer px-2.5 min-h-[36px]"
+                                aria-label="Sales history"
                             >
-                                Sales history
+                                <span>📊</span>
+                                <span className="hidden sm:inline ml-1">History</span>
                             </button>
                             <LockButton />
                         </div>
                     </header>
 
                     {/* POS Split view */}
-                    <div className="grid grid-cols-1 lg:grid-cols-[80px_1fr_360px] min-h-0">
+                    <div className="grid grid-cols-1 md:grid-cols-[1fr_320px] lg:grid-cols-[80px_1fr_360px] min-h-0">
                         {/* Left Category Sidebar (hidden on mobile, vertical on lg+) */}
                         <div className="hidden lg:flex lg:flex-col gap-2.5 border-r border-[var(--border)] p-1.5 bg-[color-mix(in_oklch,var(--bg)_20%,var(--surface))] overflow-y-auto no-scrollbar select-none">
                             {CATEGORY_MAP.map(cat => (
@@ -402,7 +416,7 @@ export default function POSPage() {
                         </div>
 
                         {/* Menu Catalog Grid */}
-                        <div className="p-3 lg:p-4 flex flex-col gap-3 overflow-hidden min-w-0">
+                        <div className={`p-3 lg:p-4 flex flex-col gap-3 overflow-hidden min-w-0 ${activeTab === 'menu' ? 'flex' : 'hidden md:flex'}`}>
                             {/* Categories Row (horizontal on mobile/tablet, hidden on lg+) */}
                             <div className="flex lg:hidden gap-2 overflow-x-auto pb-1 no-scrollbar select-none">
                                 {CATEGORY_MAP.map(cat => (
@@ -440,7 +454,7 @@ export default function POSPage() {
                             </div>
 
                             {/* Menu cards */}
-                            <div className="flex-1 overflow-y-auto pr-0.5 no-scrollbar pb-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3 align-content-start">
+                            <div className={`flex-1 overflow-y-auto pr-0.5 no-scrollbar grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3 align-content-start ${cart.length > 0 ? 'pb-20 md:pb-4' : 'pb-4'}`}>
                                 {isCatalogLoading ? (
                                     <div role="status" aria-live="polite" className="md:col-span-2 lg:col-span-2 xl:col-span-3 min-h-[180px] border border-[var(--border)] rounded-[20px] bg-[var(--surface)] flex flex-col items-center justify-center gap-2.5 text-[var(--muted)] text-xs font-bold">
                                         <div className="animate-spin rounded-full h-7 w-7 border-b-2 border-[var(--accent)]"></div>
@@ -502,17 +516,25 @@ export default function POSPage() {
                         </div>
 
                         {/* Cart Sidebar */}
-                        <aside className="border-t lg:border-t-0 lg:border-l border-[var(--border)] bg-[color-mix(in_oklch,var(--bg)_52%,var(--surface))] grid grid-rows-[auto_minmax(120px,1fr)_auto] min-h-0">
+                        <aside className={`border-t md:border-t-0 md:border-l border-[var(--border)] bg-[color-mix(in_oklch,var(--bg)_52%,var(--surface))] flex flex-col md:grid md:grid-rows-[auto_minmax(120px,1fr)_auto] overflow-y-auto md:overflow-hidden min-h-0 ${activeTab === 'cart' ? 'flex md:grid' : 'hidden md:grid'}`}>
                             {/* Cart Header */}
-                            <div className="p-3.5 border-b border-[var(--border)] flex justify-between items-center">
+                            <div className="p-3.5 border-b border-[var(--border)] flex justify-between items-center bg-[var(--surface)]">
                                 <div>
                                     <p className="font-mono text-[var(--accent)] uppercase tracking-[0.08em] text-[9px] font-extrabold">Current sale</p>
                                     <h2 className="text-xl font-display font-bold text-[var(--fg)]">Current order</h2>
                                 </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveTab('menu')}
+                                    className="md:hidden btn-secondary btn-pill px-3 py-1.5 border text-xs cursor-pointer flex items-center gap-1.5"
+                                >
+                                    <span>←</span>
+                                    <span>Menu</span>
+                                </button>
                             </div>
 
                             {/* Cart Item Rows */}
-                            <div className="overflow-y-auto p-3.5 space-y-2.5 no-scrollbar">
+                            <div className="p-3.5 space-y-2.5 no-scrollbar md:overflow-y-auto flex-none md:flex-1">
                                 {cart.length === 0 ? (
                                     <p className="text-[var(--muted)] py-4.5 text-center text-xs">Tap menu items to build the order.</p>
                                 ) : (
@@ -730,6 +752,26 @@ export default function POSPage() {
                     </div>
                 </div>
             </div>
+
+            {/* Sticky Bottom Cart Bar for Mobile */}
+            {cart.length > 0 && activeTab === 'menu' && (
+                <div className="md:hidden fixed bottom-0 left-0 right-0 bg-[var(--surface)] border-t border-[var(--border)] p-3 z-45 flex items-center justify-between shadow-[0_-8px_24px_rgba(0,0,0,0.08)]">
+                    <div className="flex flex-col">
+                        <span className="text-[10px] text-[var(--muted)] font-bold uppercase tracking-wider">Current Order</span>
+                        <span className="text-xs font-bold text-[var(--fg)]">
+                            {cart.reduce((sum, item) => sum + item.quantity, 0)} {cart.reduce((sum, item) => sum + item.quantity, 0) === 1 ? 'item' : 'items'} • <span className="text-[var(--accent)] font-black num">{formatCurrency(total)}</span>
+                        </span>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={() => setActiveTab('cart')}
+                        className="btn-primary btn-pill px-4 py-2 border text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer shadow-md"
+                    >
+                        <span>View Order</span>
+                        <span>🛒</span>
+                    </button>
+                </div>
+            )}
 
             {/* Customization Modal */}
             {customizingProduct && (

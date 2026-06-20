@@ -179,8 +179,8 @@ export default function POSPage() {
 
         if (customizingProduct.category !== 'Pastries') {
             customSyrups.forEach(syrup => {
-                customizations.push({ name: syrup, price_impact: 29 });
-                priceImpact += 29;
+                customizations.push({ name: syrup, price_impact: 15 });
+                priceImpact += 15;
             });
 
             if (customShots > 0) {
@@ -895,7 +895,7 @@ export default function POSPage() {
 
                                     {/* Syrups & Sauces Selection */}
                                     <div className="space-y-2">
-                                        <label className="text-xs font-semibold text-[var(--fg)]/80">Syrups & Sauces (+₱29.00 each)</label>
+                                        <label className="text-xs font-semibold text-[var(--fg)]/80">Syrups & Sauces (+₱15.00 each)</label>
                                         <div className="grid grid-cols-2 gap-2">
                                             {['Caramel Sauce', 'Chocolate Sauce'].map((syrup) => {
                                                 const isSelected = customSyrups.includes(syrup);
@@ -917,7 +917,7 @@ export default function POSPage() {
                                                         }`}
                                                     >
                                                         <span className="text-xs font-bold">{syrup}</span>
-                                                        <span className="text-[9px] opacity-75">+₱29.00</span>
+                                                        <span className="text-[9px] opacity-75">+₱15.00</span>
                                                     </button>
                                                 );
                                             })}

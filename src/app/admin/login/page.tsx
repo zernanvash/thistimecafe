@@ -82,14 +82,14 @@ export default function AdminLoginPage() {
                     <form onSubmit={handleCredentialsUnlock} className="space-y-4">
                         <div className="space-y-1.5">
                             <label htmlFor="email" className="block text-xs font-bold uppercase tracking-wider text-[var(--muted)]">
-                                Email Address
+                                Username or Email
                             </label>
                             <input
                                 id="email"
-                                type="email"
+                                type="text"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                placeholder="admin@example.com"
+                                placeholder="Username or Email"
                                 disabled={isSubmitting}
                                 className="w-full min-h-[54px] px-4 rounded-xl border border-[var(--border)] bg-[color-mix(in_oklch,var(--bg)_40%,var(--surface))] text-[var(--fg)] text-sm focus:outline-none focus:border-[var(--accent)] transition-all"
                                 required

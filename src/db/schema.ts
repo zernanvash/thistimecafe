@@ -3,10 +3,23 @@ export interface User {
     name: string;
     email?: string;
     password?: string; // hashed
-    role: 'admin' | 'cashier' | 'barista' | 'manager';
+    role: 'admin' | 'cashier' | 'barista' | 'manager' | 'owner';
     passcode?: string; // 6-digit PIN for role-specific staff access
+    is_locked?: boolean;
+    failed_attempts?: number;
+    locked_until?: string;
     created_at: string;
 }
+
+export interface SecurityLog {
+    id: string;
+    timestamp: string;
+    event_type: 'login_success' | 'login_failure' | 'account_lockout' | 'password_change' | 'account_lock' | 'account_unlock' | 'user_created' | 'user_deleted';
+    username: string;
+    details: string;
+    ip?: string;
+}
+
 
 export interface MenuItemCustomization {
     type: 'sizes' | 'milk' | 'syrup' | 'espresso';

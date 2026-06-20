@@ -70,9 +70,21 @@ const mongoDbInstance: DBInstance = {
             await db.collection<User>('users').insertOne(cloned as any);
             return user;
         },
+        async update(id, user) {
+            const cloned = { ...user };
+            if (cloned.password) {
+                cloned.password = hashPassword(cloned.password);
+            }
+            await db.collection('users').updateOne({ id }, { $set: cloned });
+            return this.findById(id);
+        },
         async list() {
             const users = await db.collection<User>('users').find().sort({ created_at: -1 }).toArray();
             return users.map(u => ({ ...u }));
+        },
+        async delete(id) {
+            const res = await db.collection('users').deleteOne({ id });
+            return (res.deletedCount ?? 0) > 0;
         }
     },
 
@@ -229,6 +241,22 @@ const mongoDbInstance: DBInstance = {
         }
     },
 
+    securityLogs: {
+        async create(log) {
+            const newLog = {
+                id: crypto.randomUUID(),
+                timestamp: new Date().toISOString(),
+                ...log
+            };
+            await db.collection('security_logs').insertOne(newLog);
+            return newLog as any;
+        },
+        async list() {
+            const logs = await db.collection('security_logs').find().sort({ timestamp: -1 }).toArray();
+            return logs.map(l => ({ ...l })) as any[];
+        }
+    },
+
     async initialize() {
         if (db) return;
 
@@ -246,10 +274,8 @@ const mongoDbInstance: DBInstance = {
 
         // Keep local seeded accounts aligned with the current 6-digit PIN rule.
         await db.collection('users').bulkWrite([
-            { updateOne: { filter: { id: 'u-1' }, update: { $set: { passcode: '123456' } } } },
-            { updateOne: { filter: { id: 'u-2' }, update: { $set: { passcode: '111111' } } } },
-            { updateOne: { filter: { id: 'u-3' }, update: { $set: { passcode: '222222' } } } },
-            { updateOne: { filter: { id: 'u-4' }, update: { $set: { passcode: '333333' } } } }
+            { updateOne: { filter: { id: 'u-1' }, update: { $set: { passcode: '749215' } } } },
+            { updateOne: { filter: { id: 'u-2' }, update: { $set: { passcode: '385624' } } } }
         ], { ordered: false });
 
         // Migration to populate max_capacity with stock if it is missing in ingredients
@@ -270,58 +296,48 @@ const mongoDbInstance: DBInstance = {
             console.log('Seeding MongoDB Database...');
 
             const adminUser: User = {
-                id: 'u-1',
-                name: 'Admin User',
-                email: 'admin@example.com',
-                password: hashPassword('password'),
+                id: 'u-admin',
+                name: 'adm1nadm1n',
+                email: 'adm1nadm1n',
+                password: hashPassword('H3r0br1n3$'),
                 role: 'admin',
-                passcode: '123456',
                 created_at: new Date().toISOString()
             };
-            const cashierUser: User = {
+            const dynUser: User = {
+                id: 'u-1',
+                name: 'dyn3',
+                email: 'dyn3@thistimecafe.tech',
+                password: hashPassword('tTc_dyN3_92s#pWx'),
+                role: 'owner',
+                passcode: '749215',
+                created_at: new Date().toISOString()
+            };
+            const jrlieUser: User = {
                 id: 'u-2',
-                name: 'Cashier User',
-                email: 'cashier@example.com',
-                password: hashPassword('password'),
-                role: 'cashier',
-                passcode: '111111',
+                name: 'jrlie',
+                email: 'jrlie@thistimecafe.tech',
+                password: hashPassword('tTc_jrLie_83k!zQp'),
+                role: 'owner',
+                passcode: '385624',
                 created_at: new Date().toISOString()
             };
-            const baristaUser: User = {
-                id: 'u-3',
-                name: 'Barista User',
-                email: 'barista@example.com',
-                password: hashPassword('password'),
-                role: 'barista',
-                passcode: '222222',
-                created_at: new Date().toISOString()
-            };
-            const managerUser: User = {
-                id: 'u-4',
-                name: 'Manager User',
-                email: 'manager@example.com',
-                password: hashPassword('password'),
-                role: 'manager',
-                passcode: '333333',
-                created_at: new Date().toISOString()
-            };
-            await db.collection('users').insertMany([adminUser, cashierUser, baristaUser, managerUser] as any);
+            await db.collection('users').insertMany([adminUser, dynUser, jrlieUser] as any);
 
             // Seed Ingredients
             const seedIngredients: Ingredient[] = [
-                { id: 'i-1', name: 'Espresso Beans', stock: 10000, unit: 'g', min_threshold: 2000, max_capacity: 10000, created_at: new Date().toISOString() },
-                { id: 'i-2', name: 'Fresh Milk', stock: 20000, unit: 'ml', min_threshold: 4000, max_capacity: 20000, created_at: new Date().toISOString() },
-                { id: 'i-3', name: 'Caramel Syrup', stock: 5000, unit: 'ml', min_threshold: 1000, max_capacity: 5000, created_at: new Date().toISOString() },
-                { id: 'i-4', name: 'Matcha Powder', stock: 2000, unit: 'g', min_threshold: 500, max_capacity: 2000, created_at: new Date().toISOString() },
-                { id: 'i-5', name: 'Paper Cups (Hot)', stock: 1000, unit: 'unit', min_threshold: 200, max_capacity: 1000, created_at: new Date().toISOString() },
-                { id: 'i-6', name: 'Plastic Cups (Cold)', stock: 1000, unit: 'unit', min_threshold: 200, max_capacity: 1000, created_at: new Date().toISOString() },
-                { id: 'i-7', name: 'Cup Lids', stock: 2000, unit: 'unit', min_threshold: 400, max_capacity: 2000, created_at: new Date().toISOString() },
-                { id: 'i-8', name: 'Chocolate Sauce', stock: 5000, unit: 'ml', min_threshold: 1000, max_capacity: 5000, created_at: new Date().toISOString() },
-                { id: 'i-9', name: 'Taro Powder', stock: 2000, unit: 'g', min_threshold: 500, max_capacity: 2000, created_at: new Date().toISOString() },
-                { id: 'i-10', name: 'Strawberry Puree', stock: 3000, unit: 'ml', min_threshold: 600, max_capacity: 3000, created_at: new Date().toISOString() },
-                { id: 'i-11', name: 'Blueberry Puree', stock: 3000, unit: 'ml', min_threshold: 600, max_capacity: 3000, created_at: new Date().toISOString() },
-                { id: 'i-12', name: 'Cookie Dough', stock: 100, unit: 'unit', min_threshold: 20, max_capacity: 100, created_at: new Date().toISOString() },
-                { id: 'i-13', name: 'Brownie Mix', stock: 100, unit: 'unit', min_threshold: 20, max_capacity: 100, created_at: new Date().toISOString() }
+                { id: 'i-1', name: 'Espresso Beans', stock: 0, unit: 'g', min_threshold: 2000, max_capacity: 10000, created_at: new Date().toISOString() },
+                { id: 'i-2', name: 'Fresh Milk', stock: 0, unit: 'ml', min_threshold: 4000, max_capacity: 20000, created_at: new Date().toISOString() },
+                { id: 'i-3', name: 'Caramel Syrup', stock: 0, unit: 'ml', min_threshold: 1000, max_capacity: 5000, created_at: new Date().toISOString() },
+                { id: 'i-4', name: 'Matcha Powder', stock: 0, unit: 'g', min_threshold: 500, max_capacity: 2000, created_at: new Date().toISOString() },
+                { id: 'i-5', name: 'Paper Cups (Hot)', stock: 0, unit: 'unit', min_threshold: 200, max_capacity: 1000, created_at: new Date().toISOString() },
+                { id: 'i-6', name: 'Plastic Cups (Cold)', stock: 0, unit: 'unit', min_threshold: 200, max_capacity: 1000, created_at: new Date().toISOString() },
+                { id: 'i-7', name: 'Cup Lids', stock: 0, unit: 'unit', min_threshold: 400, max_capacity: 2000, created_at: new Date().toISOString() },
+                { id: 'i-8', name: 'Chocolate Sauce', stock: 0, unit: 'ml', min_threshold: 1000, max_capacity: 5000, created_at: new Date().toISOString() },
+                { id: 'i-9', name: 'Taro Powder', stock: 0, unit: 'g', min_threshold: 500, max_capacity: 2000, created_at: new Date().toISOString() },
+                { id: 'i-10', name: 'Strawberry Puree', stock: 0, unit: 'ml', min_threshold: 600, max_capacity: 3000, created_at: new Date().toISOString() },
+                { id: 'i-11', name: 'Blueberry Puree', stock: 0, unit: 'ml', min_threshold: 600, max_capacity: 3000, created_at: new Date().toISOString() },
+                { id: 'i-12', name: 'Cookie Dough', stock: 0, unit: 'unit', min_threshold: 20, max_capacity: 100, created_at: new Date().toISOString() },
+                { id: 'i-13', name: 'Brownie Mix', stock: 0, unit: 'unit', min_threshold: 20, max_capacity: 100, created_at: new Date().toISOString() }
             ];
             await db.collection('ingredients').insertMany(seedIngredients as any);
 
@@ -375,12 +391,12 @@ const mongoDbInstance: DBInstance = {
                 { id: 'p-37', name: 'Blueberry Matcha', category: 'Berries Series', price: 119.00, cost: 38.00, sku: 'BER-BMA', track_stock: false, recipe: [{ ingredient_id: 'i-11', quantity: 30 }, { ingredient_id: 'i-4', quantity: 5 }, { ingredient_id: 'i-2', quantity: 200 }, { ingredient_id: 'i-6', quantity: 1 }, { ingredient_id: 'i-7', quantity: 1 }], created_at: new Date().toISOString() },
 
                 // Pastries
-                { id: 'p-38', name: 'Classic Cookies', category: 'Pastries', price: 25.00, cost: 10.00, sku: 'PST-CCO', stock: 50, track_stock: true, created_at: new Date().toISOString() },
-                { id: 'p-39', name: 'M&M Cookies', category: 'Pastries', price: 35.00, cost: 15.00, sku: 'PST-MMC', stock: 40, track_stock: true, created_at: new Date().toISOString() },
-                { id: 'p-40', name: 'Oatmilk Cookies', category: 'Pastries', price: 45.00, cost: 20.00, sku: 'PST-OCO', stock: 30, track_stock: true, created_at: new Date().toISOString() },
-                { id: 'p-41', name: 'Biscoff Cookies', category: 'Pastries', price: 45.00, cost: 20.00, sku: 'PST-BCO', stock: 30, track_stock: true, created_at: new Date().toISOString() },
-                { id: 'p-42', name: 'Classic Brownies', category: 'Pastries', price: 25.00, cost: 10.00, sku: 'PST-CBR', stock: 50, track_stock: true, created_at: new Date().toISOString() },
-                { id: 'p-43', name: 'Peanut Brownies', category: 'Pastries', price: 35.00, cost: 15.00, sku: 'PST-PBR', stock: 40, track_stock: true, created_at: new Date().toISOString() }
+                { id: 'p-38', name: 'Classic Cookies', category: 'Pastries', price: 25.00, cost: 10.00, sku: 'PST-CCO', stock: 0, track_stock: true, created_at: new Date().toISOString() },
+                { id: 'p-39', name: 'M&M Cookies', category: 'Pastries', price: 35.00, cost: 15.00, sku: 'PST-MMC', stock: 0, track_stock: true, created_at: new Date().toISOString() },
+                { id: 'p-40', name: 'Oatmilk Cookies', category: 'Pastries', price: 45.00, cost: 20.00, sku: 'PST-OCO', stock: 0, track_stock: true, created_at: new Date().toISOString() },
+                { id: 'p-41', name: 'Biscoff Cookies', category: 'Pastries', price: 45.00, cost: 20.00, sku: 'PST-BCO', stock: 0, track_stock: true, created_at: new Date().toISOString() },
+                { id: 'p-42', name: 'Classic Brownies', category: 'Pastries', price: 25.00, cost: 10.00, sku: 'PST-CBR', stock: 0, track_stock: true, created_at: new Date().toISOString() },
+                { id: 'p-43', name: 'Peanut Brownies', category: 'Pastries', price: 35.00, cost: 15.00, sku: 'PST-PBR', stock: 0, track_stock: true, created_at: new Date().toISOString() }
             ];
             await db.collection('products').insertMany(seedProducts as any);
 

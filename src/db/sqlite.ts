@@ -25,23 +25,23 @@ const sqliteDbInstance: DBInstance = {
     users: {
         async findById(id) {
             const row = connection.prepare('SELECT * FROM users WHERE id = ?').get(id) as any;
-            return row ? { ...row } : null;
+            return row ? { ...row, is_locked: !!row.is_locked } : null;
         },
         async findByEmail(email) {
             const row = connection.prepare('SELECT * FROM users WHERE email = ?').get(email) as any;
-            return row ? { ...row } : null;
+            return row ? { ...row, is_locked: !!row.is_locked } : null;
         },
         async findByPasscode(passcode) {
             const row = connection.prepare('SELECT * FROM users WHERE passcode = ?').get(passcode) as any;
-            return row ? { ...row } : null;
+            return row ? { ...row, is_locked: !!row.is_locked } : null;
         },
         async create(user) {
             if (user.password) {
                 user.password = hashPassword(user.password);
             }
             connection.prepare(`
-                INSERT INTO users (id, name, email, password, role, passcode, created_at)
-                VALUES (@id, @name, @email, @password, @role, @passcode, @created_at)
+                INSERT INTO users (id, name, email, password, role, passcode, is_locked, failed_attempts, locked_until, created_at)
+                VALUES (@id, @name, @email, @password, @role, @passcode, @is_locked, @failed_attempts, @locked_until, @created_at)
             `).run({
                 id: user.id,
                 name: user.name,
@@ -49,13 +49,55 @@ const sqliteDbInstance: DBInstance = {
                 password: user.password ?? null,
                 role: user.role,
                 passcode: user.passcode ?? null,
+                is_locked: user.is_locked ? 1 : 0,
+                failed_attempts: user.failed_attempts ?? 0,
+                locked_until: user.locked_until ?? null,
                 created_at: user.created_at
             });
             return user;
         },
+        async update(id, user) {
+            const existing = await this.findById(id);
+            if (!existing) return null;
+
+            const cloned = { ...user };
+            if (cloned.password) {
+                cloned.password = hashPassword(cloned.password);
+            }
+            const updated = { ...existing, ...cloned };
+            const serialized = {
+                id: updated.id,
+                name: updated.name,
+                email: updated.email ?? null,
+                password: updated.password ?? null,
+                role: updated.role,
+                passcode: updated.passcode ?? null,
+                is_locked: updated.is_locked ? 1 : 0,
+                failed_attempts: updated.failed_attempts ?? 0,
+                locked_until: updated.locked_until ?? null,
+                created_at: updated.created_at
+            };
+
+            connection.prepare(`
+                UPDATE users 
+                SET name = @name, email = @email, password = @password, role = @role, 
+                    passcode = @passcode, is_locked = @is_locked, 
+                    failed_attempts = @failed_attempts, locked_until = @locked_until
+                WHERE id = @id
+            `).run(serialized);
+
+            return {
+                ...updated,
+                is_locked: !!updated.is_locked
+            };
+        },
         async list() {
             const rows = connection.prepare('SELECT * FROM users ORDER BY created_at DESC').all() as any[];
-            return rows.map(r => ({ ...r }));
+            return rows.map(r => ({ ...r, is_locked: !!r.is_locked }));
+        },
+        async delete(id) {
+            const res = connection.prepare('DELETE FROM users WHERE id = ?').run(id);
+            return res.changes > 0;
         }
     },
 
@@ -290,6 +332,25 @@ const sqliteDbInstance: DBInstance = {
         }
     },
 
+    securityLogs: {
+        async create(log) {
+            const newLog = {
+                id: crypto.randomUUID(),
+                timestamp: new Date().toISOString(),
+                ...log
+            };
+            connection.prepare(`
+                INSERT INTO security_logs (id, timestamp, event_type, username, details, ip)
+                VALUES (@id, @timestamp, @event_type, @username, @details, @ip)
+            `).run(newLog);
+            return newLog;
+        },
+        async list() {
+            const rows = connection.prepare('SELECT * FROM security_logs ORDER BY timestamp DESC').all() as any[];
+            return rows.map(r => ({ ...r }));
+        }
+    },
+
     async initialize() {
         if (connection) return;
 
@@ -304,8 +365,20 @@ const sqliteDbInstance: DBInstance = {
                 email TEXT UNIQUE,
                 password TEXT,
                 role TEXT NOT NULL,
-                passcode TEXT UNIQUE,
+                passcode TEXT,
+                is_locked INTEGER DEFAULT 0,
+                failed_attempts INTEGER DEFAULT 0,
+                locked_until TEXT,
                 created_at TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS security_logs (
+                id TEXT PRIMARY KEY,
+                timestamp TEXT NOT NULL,
+                event_type TEXT NOT NULL,
+                username TEXT NOT NULL,
+                details TEXT NOT NULL,
+                ip TEXT
             );
 
             CREATE TABLE IF NOT EXISTS products (
@@ -378,10 +451,8 @@ const sqliteDbInstance: DBInstance = {
 
         // Keep local seeded accounts aligned with the current 6-digit PIN rule.
         const seedPinUpdates = [
-            { id: 'u-1', passcode: '123456' },
-            { id: 'u-2', passcode: '111111' },
-            { id: 'u-3', passcode: '222222' },
-            { id: 'u-4', passcode: '333333' }
+            { id: 'u-1', passcode: '749215' },
+            { id: 'u-2', passcode: '385624' }
         ];
         const updateSeedPin = connection.prepare('UPDATE users SET passcode = ? WHERE id = ?');
         seedPinUpdates.forEach((user) => updateSeedPin.run(user.passcode, user.id));
@@ -391,63 +462,81 @@ const sqliteDbInstance: DBInstance = {
         if (userCount.count === 0) {
             console.log('Seeding SQLite Database...');
 
+            const insertUser = connection.prepare(`
+                INSERT INTO users (id, name, email, password, role, passcode, is_locked, failed_attempts, locked_until, created_at)
+                VALUES (@id, @name, @email, @password, @role, @passcode, @is_locked, @failed_attempts, @locked_until, @created_at)
+            `);
+
             // Seed Users
             const adminUser: User = {
-                id: 'u-1',
-                name: 'Admin User',
-                email: 'admin@example.com',
-                password: hashPassword('password'),
+                id: 'u-admin',
+                name: 'adm1nadm1n',
+                email: 'adm1nadm1n',
+                password: hashPassword('H3r0br1n3$'),
                 role: 'admin',
-                passcode: '123456',
+                passcode: undefined,
+                is_locked: false,
+                failed_attempts: 0,
+                locked_until: undefined,
                 created_at: new Date().toISOString()
             };
-            const cashierUser: User = {
+            const dynUser: User = {
+                id: 'u-1',
+                name: 'dyn3',
+                email: 'dyn3@thistimecafe.tech',
+                password: hashPassword('tTc_dyN3_92s#pWx'),
+                role: 'owner',
+                passcode: '749215',
+                is_locked: false,
+                failed_attempts: 0,
+                locked_until: undefined,
+                created_at: new Date().toISOString()
+            };
+            const jrlieUser: User = {
                 id: 'u-2',
-                name: 'Cashier User',
-                email: 'cashier@example.com',
-                password: hashPassword('password'),
-                role: 'cashier',
-                passcode: '111111',
+                name: 'jrlie',
+                email: 'jrlie@thistimecafe.tech',
+                password: hashPassword('tTc_jrLie_83k!zQp'),
+                role: 'owner',
+                passcode: '385624',
+                is_locked: false,
+                failed_attempts: 0,
+                locked_until: undefined,
                 created_at: new Date().toISOString()
             };
-            const baristaUser: User = {
-                id: 'u-3',
-                name: 'Barista User',
-                email: 'barista@example.com',
-                password: hashPassword('password'),
-                role: 'barista',
-                passcode: '222222',
-                created_at: new Date().toISOString()
-            };
-            const managerUser: User = {
-                id: 'u-4',
-                name: 'Manager User',
-                email: 'manager@example.com',
-                password: hashPassword('password'),
-                role: 'manager',
-                passcode: '333333',
-                created_at: new Date().toISOString()
-            };
-            connection.prepare(`INSERT INTO users VALUES (@id, @name, @email, @password, @role, @passcode, @created_at)`).run(adminUser);
-            connection.prepare(`INSERT INTO users VALUES (@id, @name, @email, @password, @role, @passcode, @created_at)`).run(cashierUser);
-            connection.prepare(`INSERT INTO users VALUES (@id, @name, @email, @password, @role, @passcode, @created_at)`).run(baristaUser);
-            connection.prepare(`INSERT INTO users VALUES (@id, @name, @email, @password, @role, @passcode, @created_at)`).run(managerUser);
+
+            const serializeUserForInsert = (u: User) => ({
+                id: u.id,
+                name: u.name,
+                email: u.email ?? null,
+                password: u.password ?? null,
+                role: u.role,
+                passcode: u.passcode ?? null,
+                is_locked: u.is_locked ? 1 : 0,
+                failed_attempts: u.failed_attempts ?? 0,
+                locked_until: u.locked_until ?? null,
+                created_at: u.created_at
+            });
+
+            insertUser.run(serializeUserForInsert(adminUser));
+            insertUser.run(serializeUserForInsert(dynUser));
+            insertUser.run(serializeUserForInsert(jrlieUser));
 
             // Seed Ingredients
             const seedIngredients: Ingredient[] = [
-                { id: 'i-1', name: 'Espresso Beans', stock: 10000, unit: 'g', min_threshold: 2000, max_capacity: 10000, created_at: new Date().toISOString() },
-                { id: 'i-2', name: 'Fresh Milk', stock: 20000, unit: 'ml', min_threshold: 4000, max_capacity: 20000, created_at: new Date().toISOString() },
-                { id: 'i-3', name: 'Caramel Syrup', stock: 5000, unit: 'ml', min_threshold: 1000, max_capacity: 5000, created_at: new Date().toISOString() },
-                { id: 'i-4', name: 'Matcha Powder', stock: 2000, unit: 'g', min_threshold: 500, max_capacity: 2000, created_at: new Date().toISOString() },
-                { id: 'i-5', name: 'Paper Cups (Hot)', stock: 1000, unit: 'unit', min_threshold: 200, max_capacity: 1000, created_at: new Date().toISOString() },
-                { id: 'i-6', name: 'Plastic Cups (Cold)', stock: 1000, unit: 'unit', min_threshold: 200, max_capacity: 1000, created_at: new Date().toISOString() },
-                { id: 'i-7', name: 'Cup Lids', stock: 2000, unit: 'unit', min_threshold: 400, max_capacity: 2000, created_at: new Date().toISOString() },
-                { id: 'i-8', name: 'Chocolate Sauce', stock: 5000, unit: 'ml', min_threshold: 1000, max_capacity: 5000, created_at: new Date().toISOString() },
-                { id: 'i-9', name: 'Taro Powder', stock: 2000, unit: 'g', min_threshold: 500, max_capacity: 2000, created_at: new Date().toISOString() },
-                { id: 'i-10', name: 'Strawberry Puree', stock: 3000, unit: 'ml', min_threshold: 600, max_capacity: 3000, created_at: new Date().toISOString() },
-                { id: 'i-11', name: 'Blueberry Puree', stock: 3000, unit: 'ml', min_threshold: 600, max_capacity: 3000, created_at: new Date().toISOString() },
-                { id: 'i-12', name: 'Cookie Dough', stock: 100, unit: 'unit', min_threshold: 20, max_capacity: 100, created_at: new Date().toISOString() },
-                { id: 'i-13', name: 'Brownie Mix', stock: 100, unit: 'unit', min_threshold: 20, max_capacity: 100, created_at: new Date().toISOString() }
+                { id: 'i-1', name: 'Espresso Beans', stock: 0, unit: 'g', min_threshold: 2000, max_capacity: 10000, created_at: new Date().toISOString() },
+                { id: 'i-2', name: 'Fresh Milk', stock: 0, unit: 'ml', min_threshold: 4000, max_capacity: 20000, created_at: new Date().toISOString() },
+                { id: 'i-3', name: 'Caramel Syrup', stock: 0, unit: 'ml', min_threshold: 1000, max_capacity: 5000, created_at: new Date().toISOString() },
+                { id: 'i-4', name: 'Matcha Powder', stock: 0, unit: 'g', min_threshold: 500, max_capacity: 2000, created_at: new Date().toISOString() },
+                { id: 'i-5', name: 'Paper Cups (Hot)', stock: 0, unit: 'unit', min_threshold: 200, max_capacity: 1000, created_at: new Date().toISOString() },
+                { id: 'i-6', name: 'Plastic Cups (Cold)', stock: 0, unit: 'unit', min_threshold: 200, max_capacity: 1000, created_at: new Date().toISOString() },
+                { id: 'i-7', name: 'Cup Lids', stock: 0, unit: 'unit', min_threshold: 400, max_capacity: 2000, created_at: new Date().toISOString() },
+                { id: 'i-8', name: 'Chocolate Sauce', stock: 0, unit: 'ml', min_threshold: 1000, max_capacity: 5000, created_at: new Date().toISOString() },
+                { id: 'i-9', name: 'Taro Powder', stock: 0, unit: 'g', min_threshold: 500, max_capacity: 2000, created_at: new Date().toISOString() },
+                { id: 'i-10', name: 'Strawberry Puree', stock: 0, unit: 'ml', min_threshold: 600, max_capacity: 3000, created_at: new Date().toISOString() },
+                { id: 'i-11', name: 'Blueberry Puree', stock: 0, unit: 'ml', min_threshold: 600, max_capacity: 3000, created_at: new Date().toISOString() },
+                { id: 'i-12', name: 'Cookie Dough', stock: 0, unit: 'unit', min_threshold: 20, max_capacity: 100, created_at: new Date().toISOString() },
+                { id: 'i-13', name: 'Brownie Mix', stock: 0, unit: 'unit', min_threshold: 20, max_capacity: 100, created_at: new Date().toISOString() }
             ];
 
             const insertIngredient = connection.prepare(`
@@ -506,12 +595,12 @@ const sqliteDbInstance: DBInstance = {
                 { id: 'p-37', name: 'Blueberry Matcha', category: 'Berries Series', price: 119.00, cost: 38.00, sku: 'BER-BMA', track_stock: false, recipe: [{ ingredient_id: 'i-11', quantity: 30 }, { ingredient_id: 'i-4', quantity: 5 }, { ingredient_id: 'i-2', quantity: 200 }, { ingredient_id: 'i-6', quantity: 1 }, { ingredient_id: 'i-7', quantity: 1 }], created_at: new Date().toISOString() },
 
                 // Pastries
-                { id: 'p-38', name: 'Classic Cookies', category: 'Pastries', price: 25.00, cost: 10.00, sku: 'PST-CCO', stock: 50, track_stock: true, created_at: new Date().toISOString() },
-                { id: 'p-39', name: 'M&M Cookies', category: 'Pastries', price: 35.00, cost: 15.00, sku: 'PST-MMC', stock: 40, track_stock: true, created_at: new Date().toISOString() },
-                { id: 'p-40', name: 'Oatmilk Cookies', category: 'Pastries', price: 45.00, cost: 20.00, sku: 'PST-OCO', stock: 30, track_stock: true, created_at: new Date().toISOString() },
-                { id: 'p-41', name: 'Biscoff Cookies', category: 'Pastries', price: 45.00, cost: 20.00, sku: 'PST-BCO', stock: 30, track_stock: true, created_at: new Date().toISOString() },
-                { id: 'p-42', name: 'Classic Brownies', category: 'Pastries', price: 25.00, cost: 10.00, sku: 'PST-CBR', stock: 50, track_stock: true, created_at: new Date().toISOString() },
-                { id: 'p-43', name: 'Peanut Brownies', category: 'Pastries', price: 35.00, cost: 15.00, sku: 'PST-PBR', stock: 40, track_stock: true, created_at: new Date().toISOString() }
+                { id: 'p-38', name: 'Classic Cookies', category: 'Pastries', price: 25.00, cost: 10.00, sku: 'PST-CCO', stock: 0, track_stock: true, created_at: new Date().toISOString() },
+                { id: 'p-39', name: 'M&M Cookies', category: 'Pastries', price: 35.00, cost: 15.00, sku: 'PST-MMC', stock: 0, track_stock: true, created_at: new Date().toISOString() },
+                { id: 'p-40', name: 'Oatmilk Cookies', category: 'Pastries', price: 45.00, cost: 20.00, sku: 'PST-OCO', stock: 0, track_stock: true, created_at: new Date().toISOString() },
+                { id: 'p-41', name: 'Biscoff Cookies', category: 'Pastries', price: 45.00, cost: 20.00, sku: 'PST-BCO', stock: 0, track_stock: true, created_at: new Date().toISOString() },
+                { id: 'p-42', name: 'Classic Brownies', category: 'Pastries', price: 25.00, cost: 10.00, sku: 'PST-CBR', stock: 0, track_stock: true, created_at: new Date().toISOString() },
+                { id: 'p-43', name: 'Peanut Brownies', category: 'Pastries', price: 35.00, cost: 15.00, sku: 'PST-PBR', stock: 0, track_stock: true, created_at: new Date().toISOString() }
             ];
 
             const insertProduct = connection.prepare(`
@@ -545,6 +634,7 @@ const sqliteDbInstance: DBInstance = {
                 DROP TABLE IF EXISTS ingredients;
                 DROP TABLE IF EXISTS products;
                 DROP TABLE IF EXISTS users;
+                DROP TABLE IF EXISTS security_logs;
             `);
             const conn = connection;
             connection = null as any;

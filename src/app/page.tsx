@@ -101,10 +101,10 @@ export default function LandingPage() {
                 </header>
 
                 {/* Main Navigation Grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.9fr_0.9fr] gap-4 my-6 sm:my-8 flex-1 items-stretch">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 my-6 sm:my-8 flex-1 items-stretch">
 
                     {/* POS Card */}
-                    {user && (user.role === 'admin' || user.role === 'manager' || user.role === 'cashier' || user.role === 'barista') && (
+                    {user && (user.role === 'admin' || user.role === 'owner' || user.role === 'manager' || user.role === 'cashier' || user.role === 'barista') && (
                     <button
                         onClick={() => router.push('/pos')}
                         className="btn-tile btn-tile-primary h-full min-h-[220px] lg:min-h-[320px] rounded-[18px] border p-6 sm:p-8 text-left flex flex-col justify-between active:scale-[0.99] transition-all cursor-pointer group"
@@ -129,7 +129,7 @@ export default function LandingPage() {
                     )}
 
                     {/* Inventory Card */}
-                    {user && (user.role === 'admin' || user.role === 'manager' || user.role === 'barista') && (
+                    {user && (user.role === 'admin' || user.role === 'owner' || user.role === 'manager' || user.role === 'barista') && (
                     <button
                         onClick={() => router.push('/admin/inventory')}
                         className="btn-tile h-full min-h-[200px] lg:min-h-[240px] rounded-[18px] border p-6 sm:p-7 text-left flex flex-col justify-between active:scale-[0.99] transition-all cursor-pointer group"
@@ -154,7 +154,7 @@ export default function LandingPage() {
                     )}
 
                     {/* Sales History Card */}
-                    {user && (user.role === 'admin' || user.role === 'manager' || user.role === 'cashier') && (
+                    {user && (user.role === 'admin' || user.role === 'owner' || user.role === 'manager' || user.role === 'cashier') && (
                     <button
                         onClick={() => router.push('/admin/inventory?tab=reports')}
                         className="btn-tile h-full min-h-[200px] lg:min-h-[240px] rounded-[18px] border p-6 sm:p-7 text-left flex flex-col justify-between active:scale-[0.99] transition-all cursor-pointer group"
@@ -173,6 +173,29 @@ export default function LandingPage() {
                                 {user.role === 'cashier'
                                     ? 'Check your completed sales, transactions, and own register totals.'
                                     : 'Check completed sales, discounts, and register totals by date.'}
+                            </p>
+                        </div>
+                    </button>
+                    )}
+
+                    {/* Security Console Card */}
+                    {user && user.role === 'admin' && (
+                    <button
+                        onClick={() => router.push('/admin/security')}
+                        className="btn-tile h-full min-h-[200px] lg:min-h-[240px] rounded-[18px] border p-6 sm:p-7 text-left flex flex-col justify-between active:scale-[0.99] transition-all cursor-pointer group"
+                    >
+                        <div className="w-14 h-14 rounded-2xl bg-[color-mix(in_oklch,var(--danger)_14%,var(--surface))] text-[var(--danger)] flex items-center justify-center transition-all group-hover:scale-110 border border-[color-mix(in_oklch,var(--danger)_28%,var(--border))]">
+                            <svg className="w-8 h-8 stroke-[1.8]" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                        </div>
+                        <div className="mt-8">
+                            <h2 className="text-2xl font-display font-bold text-[var(--fg)] group-hover:text-[var(--danger)] transition-colors">
+                                Security Console
+                            </h2>
+                            <p className="text-[var(--muted)] text-sm mt-2">
+                                Audit security logs, manage user accounts, change passwords, and lock/unlock accounts.
                             </p>
                         </div>
                     </button>

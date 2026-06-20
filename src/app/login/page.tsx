@@ -150,14 +150,6 @@ export default function LoginPage() {
                     >
                         {isSubmitting ? 'Checking PIN...' : 'Login'}
                     </button>
-
-                    <Link
-                        href="/admin"
-                        className="btn-secondary w-full min-h-[52px] inline-flex items-center justify-center rounded-2xl border text-xs font-extrabold uppercase tracking-[0.08em]"
-                        aria-label="Open admin login"
-                    >
-                        Admin
-                    </Link>
                 </div>
             </section>
         </main>

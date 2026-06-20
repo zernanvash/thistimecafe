@@ -1,11 +1,13 @@
-import { User, Product, Ingredient, Order, PurchaseOrder } from './schema';
+import { User, Product, Ingredient, Order, PurchaseOrder, SecurityLog } from './schema';
 
 export interface UserRepository {
     findById(id: string): Promise<User | null>;
     findByEmail(email: string): Promise<User | null>;
     findByPasscode(passcode: string): Promise<User | null>;
     create(user: User): Promise<User>;
+    update(id: string, user: Partial<User>): Promise<User | null>;
     list(): Promise<User[]>;
+    delete(id: string): Promise<boolean>;
 }
 
 export interface ProductRepository {
@@ -45,12 +47,18 @@ export interface PurchaseOrderRepository {
     list(): Promise<PurchaseOrder[]>;
 }
 
+export interface SecurityLogRepository {
+    create(log: Omit<SecurityLog, 'id' | 'timestamp'>): Promise<SecurityLog>;
+    list(): Promise<SecurityLog[]>;
+}
+
 export interface DBInstance {
     users: UserRepository;
     products: ProductRepository;
     ingredients: IngredientRepository;
     orders: OrderRepository;
     purchaseOrders: PurchaseOrderRepository;
+    securityLogs: SecurityLogRepository;
     initialize(): Promise<void>;
     wipeDatabase(): Promise<void>;
 }

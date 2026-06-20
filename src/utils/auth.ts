@@ -46,10 +46,10 @@ export interface JWTPayload {
     exp: number;
 }
 
-export type StaffRole = 'admin' | 'cashier' | 'barista' | 'manager';
+export type StaffRole = 'admin' | 'cashier' | 'barista' | 'manager' | 'owner';
 
 export function getHomePathForRole(role: StaffRole): string {
-    if (role === 'manager' || role === 'admin') {
+    if (role === 'manager' || role === 'admin' || role === 'owner') {
         return '/';
     }
     return '/pos';
@@ -58,9 +58,32 @@ export function getHomePathForRole(role: StaffRole): string {
 export function canRoleAccessPath(role: StaffRole, pathname: string): boolean {
     if (pathname === '/' || pathname.startsWith('/api/auth')) return true;
 
-    // Admin & Manager have full access to all paths
-    if (role === 'admin' || role === 'manager') {
+    // Admin has full access to all paths
+    if (role === 'admin') {
         return true;
+    }
+
+    // Owner, Manager, Cashier, Barista cannot access security or user admin pages/APIs
+    if (pathname.startsWith('/admin/security') || pathname.startsWith('/api/admin/users')) {
+        return false;
+    }
+
+    // Manager allowed paths (all paths except security/user admin)
+    if (role === 'manager') {
+        return true;
+    }
+
+    // Owner allowed paths (full access to inventory, reports, POS, POs)
+    if (role === 'owner') {
+        const ownerAllowed = [
+            '/pos',
+            '/admin/inventory',
+            '/api/products',
+            '/api/ingredients',
+            '/api/orders',
+            '/api/admin/purchase-orders'
+        ];
+        return ownerAllowed.some((path) => pathname.startsWith(path));
     }
 
     // Cashier allowed paths

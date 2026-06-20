@@ -349,15 +349,15 @@ export default function POSPage() {
                 <div className="flex-1 grid grid-rows-[auto_1fr] min-h-0">
 
                     {/* Header */}
-                    <header className="border-b border-[var(--border)] py-2.5 px-3 sm:py-3.5 sm:px-5 flex flex-row items-center justify-between gap-2.5">
-                        <div className="flex items-center gap-2.5 min-w-0">
+                    <header className="border-b border-[var(--border)] py-2 px-2.5 sm:py-3.5 sm:px-5 flex flex-row items-center justify-between gap-1 sm:gap-2.5">
+                        <div className="flex items-center gap-1 sm:gap-2.5 min-w-0">
                             <BrandMark compact />
                             <div className="min-w-0">
                                 <h1 className="text-lg sm:text-2xl font-display font-bold leading-none">Register</h1>
                                 <p className="hidden sm:block text-[var(--muted)] text-xs mt-1">Build the order, take payment, and give change from one screen.</p>
                             </div>
                         </div>
-                        <div className="flex gap-1.5 sm:gap-2 items-center justify-end">
+                        <div className="flex gap-1 sm:gap-2 items-center justify-end">
                             <span className="hidden md:inline-flex min-h-[36px] items-center px-2.5 border border-[var(--border)] rounded-full text-[var(--muted)] bg-[var(--surface)] text-[11px] font-bold">
                                 Shift active
                             </span>
@@ -367,7 +367,7 @@ export default function POSPage() {
                             <button
                                 type="button"
                                 onClick={() => router.push('/')}
-                                className="btn-secondary btn-pill inline-flex items-center border text-[11px] transition-all cursor-pointer px-2.5 min-h-[36px]"
+                                className="btn-secondary btn-pill inline-flex items-center border text-[11px] transition-all cursor-pointer px-1.5 sm:px-2.5 min-h-[36px]"
                                 aria-label="Home"
                             >
                                 <span>🏠</span>
@@ -376,7 +376,7 @@ export default function POSPage() {
                             <button
                                 type="button"
                                 onClick={() => router.push('/admin/inventory')}
-                                className="btn-secondary btn-pill inline-flex items-center border text-[11px] transition-all cursor-pointer px-2.5 min-h-[36px]"
+                                className="btn-secondary btn-pill inline-flex items-center border text-[11px] transition-all cursor-pointer px-1.5 sm:px-2.5 min-h-[36px]"
                                 aria-label="Inventory"
                             >
                                 <span>📦</span>
@@ -385,7 +385,7 @@ export default function POSPage() {
                             <button
                                 type="button"
                                 onClick={() => router.push('/admin/inventory?tab=reports')}
-                                className="btn-secondary btn-pill inline-flex items-center border text-[11px] transition-all cursor-pointer px-2.5 min-h-[36px]"
+                                className="btn-secondary btn-pill inline-flex items-center border text-[11px] transition-all cursor-pointer px-1.5 sm:px-2.5 min-h-[36px]"
                                 aria-label="Sales history"
                             >
                                 <span>📊</span>

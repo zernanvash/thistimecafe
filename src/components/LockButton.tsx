@@ -22,7 +22,7 @@ export default function LockButton({ label = 'Lock / logout' }: LockButtonProps)
         <button
             type="button"
             onClick={handleLock}
-            className="btn-danger btn-pill min-h-[36px] sm:min-h-[44px] px-3 sm:px-5 border text-xs sm:text-sm cursor-pointer transition-all active:scale-95 flex items-center gap-1.5"
+            className="btn-danger btn-pill min-h-[36px] sm:min-h-[44px] px-2 sm:px-5 border text-xs sm:text-sm cursor-pointer transition-all active:scale-95 flex items-center gap-1.5"
             aria-label={label}
         >
             <svg className="w-4 h-4 stroke-[2] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor">

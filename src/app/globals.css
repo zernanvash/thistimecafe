@@ -222,9 +222,15 @@ select:focus-visible {
 }
 
 .brand-mark-copy {
-  display: grid;
+  display: none;
   gap: 2px;
   min-width: 0;
+}
+
+@media (min-width: 640px) {
+  .brand-mark-copy {
+    display: grid;
+  }
 }
 
 .brand-name {

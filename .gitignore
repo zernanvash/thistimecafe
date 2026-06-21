@@ -28,6 +28,8 @@ out/
 *.pem
 *Google Forms.pdf
 ThisTimeCafe_Menu_*.csv
+seed.js
+seed-mongo.js
 
 # debug
 npm-debug.log*

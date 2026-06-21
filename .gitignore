@@ -26,6 +26,8 @@ out/
 # misc
 .DS_Store
 *.pem
+*Google Forms.pdf
+ThisTimeCafe_Menu_*.csv
 
 # debug
 npm-debug.log*

@@ -67,3 +67,34 @@ export async function PATCH(
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }
+
+// Delete single order (admin only)
+export async function DELETE(
+    req: NextRequest,
+    context: { params: Promise<{ id: string }> }
+) {
+    try {
+        await ensureDb();
+        const { id } = await context.params;
+
+        const session = await getSession(req);
+        if (!session) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        if (session.role !== 'admin') {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
+
+        const order = await db.orders.findById(id);
+        if (!order) {
+            return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+        }
+
+        const success = await db.orders.delete(id);
+        return NextResponse.json({ success });
+    } catch (error: any) {
+        console.error('Delete order error:', error);
+        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    }
+}

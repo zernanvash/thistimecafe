@@ -339,6 +339,56 @@ export default function AdminInventoryPage() {
         }
     };
 
+    const handleDeleteOrder = async (id: string, orderNumber: string) => {
+        if (!window.confirm(`Are you sure you want to delete order ${orderNumber}? This action cannot be undone.`)) {
+            return;
+        }
+
+        try {
+            const res = await fetch(`/api/orders/${id}`, {
+                method: 'DELETE'
+            });
+            if (res.ok) {
+                setCompletedOrders(prev => prev.filter(o => o.id !== id));
+                void fetchReports();
+            } else {
+                const data = await res.json();
+                alert(data.error || 'Failed to delete order.');
+            }
+        } catch (err) {
+            console.error('Delete order error:', err);
+            alert('Failed to delete order due to a network issue.');
+        }
+    };
+
+    const handleClearAllHistory = async () => {
+        const confirmPhrase = 'clear all history';
+        const input = window.prompt(`WARNING: This will permanently delete ALL transactions. This action cannot be undone.\n\nTo confirm, type "${confirmPhrase}":`);
+        if (input !== confirmPhrase) {
+            if (input !== null) {
+                alert('Confirmation text did not match. Action cancelled.');
+            }
+            return;
+        }
+
+        try {
+            const res = await fetch('/api/orders', {
+                method: 'DELETE'
+            });
+            if (res.ok) {
+                setCompletedOrders([]);
+                void fetchReports();
+                alert('All sales history has been successfully cleared.');
+            } else {
+                const data = await res.json();
+                alert(data.error || 'Failed to clear sales history.');
+            }
+        } catch (err) {
+            console.error('Clear history error:', err);
+            alert('Failed to clear history due to a network issue.');
+        }
+    };
+
     const formatCurrency = (val: number) => {
         return 'PHP ' + Math.round(val).toLocaleString('en-PH');
     };
@@ -428,6 +478,13 @@ export default function AdminInventoryPage() {
         });
 
         return Object.values(breakdownMap).sort((a, b) => b.qty - a.qty);
+    }, [startDate, endDate, completedOrders]);
+
+    const filteredOrdersForList = React.useMemo(() => {
+        return completedOrders.filter(o => {
+            const date = o.created_at.substring(0, 10);
+            return date >= startDate && date <= endDate;
+        });
     }, [startDate, endDate, completedOrders]);
 
     return (
@@ -1300,6 +1357,15 @@ export default function AdminInventoryPage() {
                                                         });
                                                     })()}
                                                 </div>
+                                                {userRole === 'admin' && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleClearAllHistory}
+                                                        className="w-full btn-danger btn-pill py-2 border text-[11px] font-bold cursor-pointer transition-all active:scale-95 flex items-center justify-center gap-1.5 mt-2"
+                                                    >
+                                                        Clear All History
+                                                    </button>
+                                                )}
                                             </div>
 
                                             {/* Right Panel: Day Sales & Analytics Breakdown */}
@@ -1474,6 +1540,69 @@ export default function AdminInventoryPage() {
                                                                         </td>
                                                                     </tr>
                                                                 ))}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+
+                                                {/* Transaction History log */}
+                                                <div className="border border-[var(--border)] rounded-2xl overflow-hidden bg-[var(--surface)] space-y-3 p-4 mt-4">
+                                                    <div className="flex justify-between items-center">
+                                                        <div>
+                                                            <h4 className="text-xs font-mono text-[var(--accent)] uppercase tracking-wider font-extrabold">Transaction History</h4>
+                                                            <p className="text-[10px] text-[var(--muted)] mt-0.5">Individual orders processed during this period.</p>
+                                                        </div>
+                                                        <span className="text-[10px] font-mono font-bold bg-[var(--bg)] px-2 py-0.5 border border-[var(--border)] rounded-full text-[var(--muted)]">
+                                                            {filteredOrdersForList.length} order{filteredOrdersForList.length !== 1 ? 's' : ''}
+                                                        </span>
+                                                    </div>
+                                                    <div className="overflow-x-auto max-h-[400px] overflow-y-auto pr-1 no-scrollbar">
+                                                        <table className="inventory-table !text-[11px]">
+                                                            <thead>
+                                                                <tr className="bg-[color-mix(in_oklch,var(--fg)_4%,var(--surface))]">
+                                                                    <th>Order #</th>
+                                                                    <th>Time</th>
+                                                                    <th>Dining</th>
+                                                                    <th>Payment</th>
+                                                                    <th className="right">Amount</th>
+                                                                    {userRole === 'admin' && <th className="right">Action</th>}
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                {filteredOrdersForList.length === 0 ? (
+                                                                    <tr>
+                                                                        <td colSpan={userRole === 'admin' ? 6 : 5} className="text-center text-[var(--muted)] py-4 italic">
+                                                                            No transactions processed in this period.
+                                                                        </td>
+                                                                    </tr>
+                                                                ) : (
+                                                                    filteredOrdersForList.map((order) => (
+                                                                        <tr key={order.id} className="hover:bg-[var(--fg-soft)] border-b border-[var(--border)]">
+                                                                            <td>
+                                                                                <strong>{order.order_number}</strong>
+                                                                            </td>
+                                                                            <td>
+                                                                                {new Date(order.created_at).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' })}
+                                                                            </td>
+                                                                            <td className="capitalize">{order.dining_option}</td>
+                                                                            <td className="uppercase">{order.payment_method}</td>
+                                                                            <td className="right num font-black text-[var(--accent)]">
+                                                                                {formatCurrency(order.total)}
+                                                                            </td>
+                                                                            {userRole === 'admin' && (
+                                                                                <td className="right">
+                                                                                    <button
+                                                                                        type="button"
+                                                                                        onClick={() => handleDeleteOrder(order.id, order.order_number)}
+                                                                                        className="text-[var(--danger)] hover:text-red-700 font-extrabold cursor-pointer text-[10px]"
+                                                                                    >
+                                                                                        Delete
+                                                                                    </button>
+                                                                                </td>
+                                                                            )}
+                                                                        </tr>
+                                                                    ))
+                                                                )}
                                                             </tbody>
                                                         </table>
                                                     </div>

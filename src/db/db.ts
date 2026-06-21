@@ -38,6 +38,8 @@ export interface OrderRepository {
         taxCollected: number;
         discountsGiven: number;
     }>;
+    delete(id: string): Promise<boolean>;
+    clearAll(): Promise<boolean>;
 }
 
 export interface PurchaseOrderRepository {

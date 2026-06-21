@@ -296,6 +296,14 @@ const sqliteDbInstance: DBInstance = {
                 taxCollected: row?.taxCollected || 0,
                 discountsGiven: row?.discountsGiven || 0
             };
+        },
+        async delete(id) {
+            const res = connection.prepare('DELETE FROM orders WHERE id = ?').run(id);
+            return res.changes > 0;
+        },
+        async clearAll() {
+            connection.prepare('DELETE FROM orders').run();
+            return true;
         }
     },
 

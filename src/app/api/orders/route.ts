@@ -217,3 +217,24 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }
+
+// Clear all orders (admin only)
+export async function DELETE(req: NextRequest) {
+    try {
+        await ensureDb();
+        const session = await getSession(req);
+        if (!session) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        if (session.role !== 'admin') {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
+
+        const success = await db.orders.clearAll();
+        return NextResponse.json({ success });
+    } catch (error: any) {
+        console.error('Clear all orders error:', error);
+        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    }
+}

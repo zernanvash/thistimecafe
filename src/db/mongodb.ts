@@ -219,6 +219,14 @@ const mongoDbInstance: DBInstance = {
                 taxCollected: result[0].taxCollected || 0,
                 discountsGiven: result[0].discountsGiven || 0
             };
+        },
+        async delete(id) {
+            const res = await db.collection('orders').deleteOne({ id });
+            return (res.deletedCount ?? 0) > 0;
+        },
+        async clearAll() {
+            await db.collection('orders').deleteMany({});
+            return true;
         }
     },
 

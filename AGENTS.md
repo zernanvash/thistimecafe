@@ -55,3 +55,10 @@ For multi-step tasks, state a brief plan:
 3. [Step] → verify: [check]
 
 Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
+
+## Success Metrics
+These guidelines are working if:
+- Fewer unnecessary changes in diffs
+- Fewer rewrites due to overcomplication
+- Clarifying questions come before implementation rather than after mistakes.
+

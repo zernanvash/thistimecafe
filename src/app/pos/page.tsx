@@ -61,6 +61,10 @@ export default function POSPage() {
     // Sale confirmation state
     const [completedOrder, setCompletedOrder] = useState<Order | null>(null);
 
+    // Stock warning modal states
+    const [stockWarningProduct, setStockWarningProduct] = useState<Product | null>(null);
+    const [stockWarningMessage, setStockWarningMessage] = useState<string>('');
+
     const createCartItemId = () => {
         cartItemSeq.current += 1;
         return `c-item-${cartItemSeq.current}`;
@@ -122,8 +126,34 @@ export default function POSPage() {
     // 8% Standard Tax breakdown matching store configuration
     const tax = Math.round(total * 0.08 * 100) / 100;
 
-    // Handle product tap
-    const handleProductClick = (product: Product) => {
+    const checkInsufficientStock = (product: Product) => {
+        // 1. Check direct product stock
+        if (product.track_stock && (product.stock || 0) <= 0) {
+            return {
+                insufficient: true,
+                reason: `Product is out of stock (0 pcs remaining).`
+            };
+        }
+        // 2. Check recipe ingredient stock
+        if (product.recipe && product.recipe.length > 0) {
+            const missingIngredients: string[] = [];
+            product.recipe.forEach(r => {
+                const ing = ingredients.find(i => i.id === r.ingredient_id);
+                if (!ing || ing.stock < r.quantity) {
+                    missingIngredients.push(`${ing?.name || 'Ingredient'} (needs ${r.quantity}${ing?.unit || 'g'}, has ${ing?.stock || 0}${ing?.unit || 'g'})`);
+                }
+            });
+            if (missingIngredients.length > 0) {
+                return {
+                    insufficient: true,
+                    reason: `Insufficient ingredients: ${missingIngredients.join(', ')}.`
+                };
+            }
+        }
+        return { insufficient: false, reason: '' };
+    };
+
+    const proceedToProductCustomizeOrCart = (product: Product) => {
         setCustomizingProduct(product);
         if (product.category === 'Pastries') {
             setCustomSize('Single');
@@ -136,6 +166,17 @@ export default function POSPage() {
         setCustomShots(0);
         setCustomCream(false);
         setItemNotes('');
+    };
+
+    // Handle product tap
+    const handleProductClick = (product: Product) => {
+        const stockCheck = checkInsufficientStock(product);
+        if (stockCheck.insufficient) {
+            setStockWarningProduct(product);
+            setStockWarningMessage(stockCheck.reason);
+        } else {
+            proceedToProductCustomizeOrCart(product);
+        }
     };
 
     const handleAddCustomized = () => {
@@ -162,8 +203,6 @@ export default function POSPage() {
                 if (name.includes('Mocha Latte\'') && customizingProduct.category.includes('Classic')) {
                     diff = 30;
                 } else if (name.includes('Seasalt Latte\'') && customizingProduct.category.includes('Classic')) {
-                    diff = 30;
-                } else if (name.includes('Milo Matcha')) {
                     diff = 30;
                 } else if (name.includes('Cookies & Cream Cloud')) {
                     diff = 10;
@@ -244,7 +283,8 @@ export default function POSPage() {
 
     const handleCheckoutSubmit = async () => {
         if (cart.length === 0) return;
-        if (cashReceived < total && paymentMethod === 'cash') {
+        const tenderAmount = paymentMethod === 'cash' && cashReceived === 0 ? total : cashReceived;
+        if (tenderAmount < total && paymentMethod === 'cash') {
             setErrorMessage('Cash received is less than total amount due.');
             return;
         }
@@ -263,9 +303,10 @@ export default function POSPage() {
             payment_method: paymentMethod,
             discount: discountAmount,
             payment_details: paymentMethod === 'cash' ? {
-                amount_tendered: cashReceived,
-                change_returned: Math.max(0, changeDue)
-            } : undefined
+                amount_tendered: tenderAmount,
+                change_returned: Math.max(0, tenderAmount - total)
+            } : undefined,
+            bypass_stock: true
         };
 
         try {
@@ -471,8 +512,9 @@ export default function POSPage() {
                                         <span className="text-[var(--muted)] text-xs">Try another category or clear the search field.</span>
                                     </div>
                                 ) : filteredProducts.map(product => {
-                                    const outOfStock = product.track_stock && (product.stock || 0) <= 0;
-                                    const isLowSupply = !outOfStock && Boolean(
+                                    const stockStatus = checkInsufficientStock(product);
+                                    const isOutOfStock = stockStatus.insufficient;
+                                    const isLowSupply = !isOutOfStock && Boolean(
                                         product.recipe?.some(r => {
                                             const ing = ingredients.find(i => i.id === r.ingredient_id);
                                             if (!ing) return false;
@@ -485,14 +527,13 @@ export default function POSPage() {
                                     return (
                                         <button
                                             key={product.id}
-                                            disabled={outOfStock}
                                             onClick={() => handleProductClick(product)}
-                                            className={`h-[114px] border rounded-[18px] bg-[var(--surface)] p-3 flex flex-col justify-between text-left transition-all active:translate-y-[1px] ${
-                                                outOfStock
-                                                    ? 'opacity-30 cursor-not-allowed border-[var(--border)]'
+                                            className={`h-[114px] border rounded-[18px] bg-[var(--surface)] p-3 flex flex-col justify-between text-left transition-all active:translate-y-[1px] btn-tile cursor-pointer ${
+                                                isOutOfStock
+                                                    ? 'border-[var(--danger)] opacity-80 shadow-[0_0_4px_color-mix(in_oklch,var(--danger)_10%,transparent)]'
                                                     : isLowSupply
-                                                        ? 'border-[var(--danger)] shadow-[0_0_6px_color-mix(in_oklch,var(--danger)_15%,transparent)] btn-tile cursor-pointer'
-                                                        : 'border-[var(--border)] btn-tile cursor-pointer'
+                                                        ? 'border-[color-mix(in_oklch,var(--danger)_50%,var(--border))] shadow-[0_0_6px_color-mix(in_oklch,var(--danger)_15%,transparent)]'
+                                                        : 'border-[var(--border)]'
                                             }`}
                                         >
                                             <div className="space-y-0.5 overflow-hidden">
@@ -502,11 +543,11 @@ export default function POSPage() {
                                             <div className="flex justify-between items-center mt-1.5 pt-1 border-t border-[var(--border)] border-dashed w-full min-w-0">
                                                 <span className="text-[var(--accent)] font-black num text-sm truncate">{formatCurrency(product.price)}</span>
                                                 <em className={`border rounded-full px-1.5 py-0.5 text-[9px] font-bold not-italic truncate max-w-[50%] ${
-                                                    isLowSupply
+                                                    isOutOfStock || isLowSupply
                                                         ? 'border-[color-mix(in_oklch,var(--danger)_30%,var(--border))] text-[var(--danger)] bg-[color-mix(in_oklch,var(--danger)_8%,var(--surface))] font-extrabold'
                                                         : 'border-[var(--border)] text-[var(--muted)] bg-[var(--bg)]'
                                                 }`}>
-                                                    {isLowSupply ? '⚠️ Low Supply' : getStockDescription(product)}
+                                                    {isOutOfStock ? '⚠️ Out of Stock' : isLowSupply ? '⚠️ Low Supply' : getStockDescription(product)}
                                                 </em>
                                             </div>
                                         </button>
@@ -711,19 +752,12 @@ export default function POSPage() {
                                             Back
                                         </button>
                                     </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => setCashReceived(total)}
-                                        className="btn-primary w-full min-h-[34px] border rounded-[8px] text-[10px] cursor-pointer transition-all flex items-center justify-center"
-                                    >
-                                        Exact Amount ({formatCurrency(total)})
-                                    </button>
 
                                     {/* Change readout */}
                                     <div className="min-h-[36px] border border-[var(--border)] rounded-lg flex items-center justify-between px-2.5 bg-[var(--surface)]">
                                         <span className="text-[10px] text-[var(--muted)] font-bold">Change</span>
-                                        <strong className={`num text-base font-bold ${changeDue >= 0 && total > 0 ? 'text-[var(--ok)]' : 'text-[var(--danger)]'}`}>
-                                            {changeDue >= 0 && total > 0 ? formatCurrency(changeDue) : `${formatCurrency(Math.abs(changeDue))} short`}
+                                        <strong className={`num text-base font-bold ${cashReceived === 0 ? 'text-[var(--muted)]' : changeDue >= 0 ? 'text-[var(--ok)]' : 'text-[var(--danger)]'}`}>
+                                            {cashReceived === 0 ? 'Exact cash' : changeDue >= 0 ? formatCurrency(changeDue) : `${formatCurrency(Math.abs(changeDue))} short`}
                                         </strong>
                                     </div>
                                 </div>
@@ -742,10 +776,10 @@ export default function POSPage() {
 
                                 <button
                                     onClick={handleCheckoutSubmit}
-                                    disabled={cart.length === 0 || isSubmittingOrder || user?.role === 'barista' || (paymentMethod === 'cash' && cashReceived < total)}
+                                    disabled={cart.length === 0 || isSubmittingOrder || user?.role === 'barista' || (paymentMethod === 'cash' && cashReceived > 0 && cashReceived < total)}
                                     className="btn-primary w-full min-h-[46px] rounded-xl border text-xs disabled:opacity-40 transition-all cursor-pointer flex items-center justify-center gap-1.5"
                                 >
-                                    {user?.role === 'barista' ? 'Checkout Locked' : isSubmittingOrder ? 'Processing...' : 'Complete sale'}
+                                    {user?.role === 'barista' ? 'Checkout Locked' : isSubmittingOrder ? 'Processing...' : paymentMethod === 'cash' && cashReceived === 0 ? 'Complete sale (Exact Cash)' : 'Complete sale'}
                                 </button>
                             </div>
                         </aside>
@@ -843,7 +877,7 @@ export default function POSPage() {
                                     <div className="grid grid-cols-2 gap-2">
                                         {[
                                             { name: '16oz', label: 'Iced (16oz)', price: 'Base' },
-                                            { name: '22oz', label: 'Iced (22oz)', price: (customizingProduct.name.includes('Mocha Latte\'') && customizingProduct.category.includes('Classic')) || (customizingProduct.name.includes('Seasalt Latte\'') && customizingProduct.category.includes('Classic')) || customizingProduct.name.includes('Milo Matcha') ? '+₱30.00' : customizingProduct.name.includes('Cookies & Cream Cloud') || customizingProduct.name.includes('Blueberry Cloud') ? '+₱10.00' : '+₱20.00' }
+                                            { name: '22oz', label: 'Iced (22oz)', price: (customizingProduct.name.includes('Mocha Latte\'') && customizingProduct.category.includes('Classic')) || (customizingProduct.name.includes('Seasalt Latte\'') && customizingProduct.category.includes('Classic')) ? '+₱30.00' : customizingProduct.name.includes('Cookies & Cream Cloud') || customizingProduct.name.includes('Blueberry Cloud') ? '+₱10.00' : '+₱20.00' }
                                         ].map((s) => (
                                             <button
                                                 key={s.name}
@@ -1039,6 +1073,54 @@ export default function POSPage() {
                                 className="btn-primary flex-1 py-3 border rounded-xl text-xs transition-all cursor-pointer text-center"
                             >
                                 New Order
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Insufficient Stock Warning Modal */}
+            {stockWarningProduct && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div role="dialog" aria-modal="true" aria-labelledby="stock-warning-title" className="bg-[var(--surface)] text-[var(--fg)] p-6 rounded-[20px] w-full max-w-sm border border-[var(--border)] shadow-[var(--shadow)] flex flex-col justify-between relative">
+                        <div className="space-y-4">
+                            <div className="text-center space-y-2">
+                                <div className="mx-auto w-12 h-12 rounded-full bg-[color-mix(in_oklch,var(--danger)_15%,var(--surface))] text-[var(--danger)] flex items-center justify-center text-2xl">
+                                    ⚠️
+                                </div>
+                                <h3 id="stock-warning-title" className="font-display font-bold text-lg leading-tight">Insufficient Stock</h3>
+                                <p className="text-xs text-[var(--muted)]">
+                                    Warning for <strong>{stockWarningProduct.name}</strong>:
+                                </p>
+                                <p className="text-xs text-[var(--danger)] bg-[color-mix(in_oklch,var(--danger)_8%,var(--surface))] border border-[color-mix(in_oklch,var(--danger)_24%,var(--border))] p-3 rounded-xl font-semibold">
+                                    {stockWarningMessage}
+                                </p>
+                                <p className="text-xs text-[var(--muted)] pt-1">
+                                    Do you want to bypass this warning and add it anyway?
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-2 mt-6">
+                            <button
+                                onClick={() => {
+                                    setStockWarningProduct(null);
+                                    setStockWarningMessage('');
+                                }}
+                                className="btn-secondary flex-1 py-3 border rounded-xl text-xs transition-all cursor-pointer text-center"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={() => {
+                                    const prod = stockWarningProduct;
+                                    setStockWarningProduct(null);
+                                    setStockWarningMessage('');
+                                    proceedToProductCustomizeOrCart(prod);
+                                }}
+                                className="btn-primary flex-1 py-3 border rounded-xl text-xs transition-all cursor-pointer text-center"
+                            >
+                                Add Anyway
                             </button>
                         </div>
                     </div>

@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
         }
 
         const body = await req.json();
-        const { items, dining_option, payment_method, discount, payment_details } = body as {
+        const { items, dining_option, payment_method, discount, payment_details, bypass_stock } = body as {
             items: {
                 product_id: string;
                 quantity: number;
@@ -59,6 +59,7 @@ export async function POST(req: NextRequest) {
                 amount_tendered?: number;
                 change_returned?: number;
             };
+            bypass_stock?: boolean;
         };
 
         if (!items || items.length === 0) {
@@ -107,13 +108,15 @@ export async function POST(req: NextRequest) {
                 }
 
                 if (productStockTemp[product.id] < item.quantity) {
-                    return NextResponse.json({ 
-                        error: `Insufficient stock for product: ${product.name}. Available: ${productStockTemp[product.id]}` 
-                    }, { status: 400 });
+                    if (!bypass_stock) {
+                        return NextResponse.json({ 
+                            error: `Insufficient stock for product: ${product.name}. Available: ${productStockTemp[product.id]}` 
+                        }, { status: 400 });
+                    }
                 }
 
                 // Reserve stock in temp state
-                productStockTemp[product.id] -= item.quantity;
+                productStockTemp[product.id] = Math.max(0, productStockTemp[product.id] - item.quantity);
                 stockDeductions.push({
                     type: 'product',
                     id: product.id,
@@ -138,12 +141,14 @@ export async function POST(req: NextRequest) {
 
                     const requiredQty = recipeItem.quantity * item.quantity;
                     if (ingredientStockTemp[ingredient.id] < requiredQty) {
-                        return NextResponse.json({ 
-                            error: `Insufficient stock for ingredient: ${ingredient.name}. Required: ${requiredQty}${ingredient.unit}, Available: ${ingredientStockTemp[ingredient.id]}${ingredient.unit}` 
-                        }, { status: 400 });
+                        if (!bypass_stock) {
+                            return NextResponse.json({ 
+                                error: `Insufficient stock for ingredient: ${ingredient.name}. Required: ${requiredQty}${ingredient.unit}, Available: ${ingredientStockTemp[ingredient.id]}${ingredient.unit}` 
+                            }, { status: 400 });
+                        }
                     }
 
-                    ingredientStockTemp[ingredient.id] -= requiredQty;
+                    ingredientStockTemp[ingredient.id] = Math.max(0, ingredientStockTemp[ingredient.id] - requiredQty);
                     stockDeductions.push({
                         type: 'ingredient',
                         id: ingredient.id,

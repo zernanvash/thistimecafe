@@ -1041,196 +1041,208 @@ export default function AdminInventoryPage() {
                                             </div>
 
                                             {/* Right Column: Edit product details */}
-                                            <aside className="border border-[var(--border)] rounded-[var(--radius)] p-6 bg-[var(--surface)] flex flex-col justify-between min-h-[500px]">
-                                                {selectedProductId && products.find(p => p.id === selectedProductId) ? (() => {
-                                                    const prod = products.find(p => p.id === selectedProductId)!;
-                                                    return (
-                                                        <form onSubmit={async (e) => {
-                                                            e.preventDefault();
-                                                            setEditError('');
-                                                            setEditSuccess('');
-                                                            try {
-                                                                const res = await fetch(`/api/products/${selectedProductId}`, {
-                                                                    method: 'PATCH',
-                                                                    headers: { 'Content-Type': 'application/json' },
-                                                                    body: JSON.stringify({
-                                                                        name: editName,
-                                                                        price: editPrice,
-                                                                        track_stock: editTrackStock,
-                                                                        stock: editTrackStock ? editStock : null,
-                                                                        recipe: editRecipe
-                                                                    })
-                                                                });
-                                                                const data = await res.json();
-                                                                if (res.ok && data.success) {
-                                                                    setEditSuccess('Changes saved successfully!');
-                                                                    setProducts(prev => prev.map(p => p.id === selectedProductId ? data.product : p));
-                                                                } else {
-                                                                    setEditError(data.error || 'Failed to update product.');
+                                            <div className={selectedProductId ? 'fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 xl:relative xl:inset-auto xl:bg-transparent xl:backdrop-blur-none xl:z-0 xl:p-0 xl:block' : 'hidden xl:block'}>
+                                                <aside className="bg-[var(--surface)] rounded-[20px] w-full max-w-lg border border-[var(--border)] shadow-[var(--shadow)] overflow-y-auto max-h-[90vh] xl:max-h-none xl:overflow-visible xl:rounded-[var(--radius)] xl:max-w-none xl:shadow-none h-full flex flex-col justify-between p-6 no-scrollbar">
+                                                    {selectedProductId && products.find(p => p.id === selectedProductId) ? (() => {
+                                                        const prod = products.find(p => p.id === selectedProductId)!;
+                                                        return (
+                                                            <form onSubmit={async (e) => {
+                                                                e.preventDefault();
+                                                                setEditError('');
+                                                                setEditSuccess('');
+                                                                try {
+                                                                    const res = await fetch(`/api/products/${selectedProductId}`, {
+                                                                        method: 'PATCH',
+                                                                        headers: { 'Content-Type': 'application/json' },
+                                                                        body: JSON.stringify({
+                                                                            name: editName,
+                                                                            price: editPrice,
+                                                                            track_stock: editTrackStock,
+                                                                            stock: editTrackStock ? editStock : null,
+                                                                            recipe: editRecipe
+                                                                        })
+                                                                    });
+                                                                    const data = await res.json();
+                                                                    if (res.ok && data.success) {
+                                                                        setEditSuccess('Changes saved successfully!');
+                                                                        setProducts(prev => prev.map(p => p.id === selectedProductId ? data.product : p));
+                                                                    } else {
+                                                                        setEditError(data.error || 'Failed to update product.');
+                                                                    }
+                                                                } catch {
+                                                                    setEditError('Network error trying to update product.');
                                                                 }
-                                                            } catch {
-                                                                setEditError('Network error trying to update product.');
-                                                            }
-                                                        }} className="space-y-4 h-full flex flex-col justify-between">
-                                                            <div className="space-y-4">
-                                                                <div>
-                                                                    <p className="font-mono text-[var(--accent)] uppercase tracking-[0.08em] text-[10px] font-extrabold">Product Editor</p>
-                                                                    <h2 className="text-2xl font-display font-bold text-[var(--fg)] mt-0.5">{prod.name}</h2>
-                                                                    <p className="text-[var(--muted)] text-xs mt-1">Configure item properties, stock tracking, and raw ingredient decomposition.</p>
-                                                                </div>
-
-                                                                {editSuccess && (
-                                                                    <div role="alert" className="p-3 bg-[color-mix(in_oklch,var(--ok)_8%,var(--surface))] border border-[color-mix(in_oklch,var(--ok)_24%,var(--border))] rounded-xl text-xs text-[var(--ok)] font-semibold text-center">
-                                                                        {editSuccess}
-                                                                    </div>
-                                                                )}
-                                                                {editError && (
-                                                                    <div role="alert" className="p-3 bg-[color-mix(in_oklch,var(--danger)_8%,var(--surface))] border border-[color-mix(in_oklch,var(--danger)_24%,var(--border))] rounded-xl text-xs text-[var(--danger)] font-semibold text-center">
-                                                                        {editError}
-                                                                    </div>
-                                                                )}
-
-                                                                <div className="space-y-3">
-                                                                    <div className="space-y-1">
-                                                                        <label htmlFor="edit-name" className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-[0.06em]">Display Name</label>
-                                                                        <input
-                                                                            id="edit-name"
-                                                                            type="text"
-                                                                            value={editName}
-                                                                            onChange={(e) => setEditName(e.target.value)}
-                                                                            required
-                                                                            className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-xs font-bold"
-                                                                        />
+                                                            }} className="space-y-4 h-full flex flex-col justify-between">
+                                                                <div className="space-y-4">
+                                                                    <div className="flex justify-between items-start gap-4">
+                                                                        <div>
+                                                                            <p className="font-mono text-[var(--accent)] uppercase tracking-[0.08em] text-[10px] font-extrabold">Product Editor</p>
+                                                                            <h2 className="text-2xl font-display font-bold text-[var(--fg)] mt-0.5">{prod.name}</h2>
+                                                                            <p className="text-[var(--muted)] text-xs mt-1">Configure item properties, stock tracking, and raw ingredient decomposition.</p>
+                                                                        </div>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => setSelectedProductId(null)}
+                                                                            className="btn-secondary w-8 h-8 rounded-full border flex items-center justify-center cursor-pointer text-xs shrink-0"
+                                                                            aria-label="Close editor"
+                                                                        >
+                                                                            x
+                                                                        </button>
                                                                     </div>
 
-                                                                    <div className="grid grid-cols-2 gap-3">
+                                                                    {editSuccess && (
+                                                                        <div role="alert" className="p-3 bg-[color-mix(in_oklch,var(--ok)_8%,var(--surface))] border border-[color-mix(in_oklch,var(--ok)_24%,var(--border))] rounded-xl text-xs text-[var(--ok)] font-semibold text-center">
+                                                                            {editSuccess}
+                                                                        </div>
+                                                                    )}
+                                                                    {editError && (
+                                                                        <div role="alert" className="p-3 bg-[color-mix(in_oklch,var(--danger)_8%,var(--surface))] border border-[color-mix(in_oklch,var(--danger)_24%,var(--border))] rounded-xl text-xs text-[var(--danger)] font-semibold text-center">
+                                                                            {editError}
+                                                                        </div>
+                                                                    )}
+
+                                                                    <div className="space-y-3">
                                                                         <div className="space-y-1">
-                                                                            <label htmlFor="edit-price" className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-[0.06em]">Base Price (PHP)</label>
+                                                                            <label htmlFor="edit-name" className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-[0.06em]">Display Name</label>
                                                                             <input
-                                                                                id="edit-price"
-                                                                                type="number"
-                                                                                value={editPrice || ''}
-                                                                                onChange={(e) => setEditPrice(Math.max(0, parseFloat(e.target.value) || 0))}
+                                                                                id="edit-name"
+                                                                                type="text"
+                                                                                value={editName}
+                                                                                onChange={(e) => setEditName(e.target.value)}
                                                                                 required
                                                                                 className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-xs font-bold"
                                                                             />
                                                                         </div>
 
-                                                                        <div className="space-y-1">
-                                                                            <label htmlFor="edit-stock" className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-[0.06em]">Stock count</label>
-                                                                            <input
-                                                                                id="edit-stock"
-                                                                                type="number"
-                                                                                disabled={!editTrackStock}
-                                                                                value={editTrackStock ? editStock : ''}
-                                                                                onChange={(e) => setEditStock(Math.max(0, parseInt(e.target.value, 10) || 0))}
-                                                                                placeholder="N/A"
-                                                                                className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-xs font-bold disabled:opacity-40"
-                                                                            />
+                                                                        <div className="grid grid-cols-2 gap-3">
+                                                                            <div className="space-y-1">
+                                                                                <label htmlFor="edit-price" className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-[0.06em]">Base Price (PHP)</label>
+                                                                                <input
+                                                                                    id="edit-price"
+                                                                                    type="number"
+                                                                                    value={editPrice || ''}
+                                                                                    onChange={(e) => setEditPrice(Math.max(0, parseFloat(e.target.value) || 0))}
+                                                                                    required
+                                                                                    className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-xs font-bold"
+                                                                                />
+                                                                            </div>
+
+                                                                            <div className="space-y-1">
+                                                                                <label htmlFor="edit-stock" className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-[0.06em]">Stock count</label>
+                                                                                <input
+                                                                                    id="edit-stock"
+                                                                                    type="number"
+                                                                                    disabled={!editTrackStock}
+                                                                                    value={editTrackStock ? editStock : ''}
+                                                                                    onChange={(e) => setEditStock(Math.max(0, parseInt(e.target.value, 10) || 0))}
+                                                                                    placeholder="N/A"
+                                                                                    className="w-full px-3 py-2 bg-[var(--bg)] border border-[var(--border)] rounded-xl text-xs font-bold disabled:opacity-40"
+                                                                                />
+                                                                            </div>
                                                                         </div>
-                                                                    </div>
 
-                                                                    <label className="flex items-center gap-2 py-1 px-1 cursor-pointer select-none">
-                                                                        <input
-                                                                            type="checkbox"
-                                                                            checked={editTrackStock}
-                                                                            onChange={(e) => {
-                                                                                setEditTrackStock(e.target.checked);
-                                                                                if (!e.target.checked) setEditStock(0);
-                                                                            }}
-                                                                            className="rounded border-[var(--border)] text-[var(--accent)] focus:ring-[var(--accent)]"
-                                                                        />
-                                                                        <span className="text-[11px] font-bold text-[var(--fg)]">Track finished stock directly (e.g. pastries)</span>
-                                                                    </label>
-                                                                </div>
-
-                                                                {/* Recipe Editor section */}
-                                                                <div className="space-y-2.5 border-t border-[var(--border)] pt-4">
-                                                                    <span className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-[0.06em]">Recipe Decomposition</span>
-
-                                                                    {/* Ingredients List */}
-                                                                    {editRecipe.length === 0 ? (
-                                                                        <p className="text-[var(--muted)] text-[11px] italic p-3 text-center border border-dashed border-[var(--border)] rounded-xl bg-[var(--bg)]">No raw stock ingredients linked to this product.</p>
-                                                                    ) : (
-                                                                        <div className="space-y-1.5 max-h-[160px] overflow-y-auto pr-1 no-scrollbar">
-                                                                            {editRecipe.map((recipeItem, idx) => {
-                                                                                const ing = ingredients.find(i => i.id === recipeItem.ingredient_id);
-                                                                                return (
-                                                                                    <div key={idx} className="flex justify-between items-center text-xs bg-[var(--bg)] px-2.5 py-2 rounded-xl border border-[var(--border)]">
-                                                                                        <span>{ing?.name || 'Unknown'} - <strong className="num text-[var(--fg)]">{recipeItem.quantity} {ing?.unit || 'g'}</strong></span>
-                                                                                        <button
-                                                                                            type="button"
-                                                                                            onClick={() => setEditRecipe(prev => prev.filter(r => r.ingredient_id !== recipeItem.ingredient_id))}
-                                                                                            className="text-[var(--danger)] hover:text-red-700 font-extrabold cursor-pointer text-xs"
-                                                                                        >
-                                                                                            Remove
-                                                                                        </button>
-                                                                                    </div>
-                                                                                );
-                                                                            })}
-                                                                        </div>
-                                                                    )}
-
-                                                                    {/* Add ingredient Row */}
-                                                                    <div className="bg-[color-mix(in_oklch,var(--fg)_3%,var(--surface))] p-3 rounded-xl border border-[var(--border)] space-y-2 text-xs">
-                                                                        <div className="text-[9px] font-bold text-[var(--accent)] uppercase tracking-[0.06em]">Add Ingredient Item</div>
-                                                                        <select
-                                                                            aria-label="Add ingredient to recipe"
-                                                                            value={recipeIngId}
-                                                                            onChange={(e) => setRecipeIngId(e.target.value)}
-                                                                            className="w-full px-2 py-2 bg-[var(--surface)] border border-[var(--border)] rounded-lg text-xs"
-                                                                        >
-                                                                            <option value="">-- Select Ingredient --</option>
-                                                                            {ingredients.map(i => (
-                                                                                <option key={i.id} value={i.id}>{i.name} ({i.unit})</option>
-                                                                            ))}
-                                                                        </select>
-                                                                        <div className="grid grid-cols-[1fr_auto] gap-2 items-center">
+                                                                        <label className="flex items-center gap-2 py-1 px-1 cursor-pointer select-none">
                                                                             <input
-                                                                                aria-label="Recipe ingredient quantity"
-                                                                                type="number"
-                                                                                value={recipeIngQty || ''}
-                                                                                onChange={(e) => setRecipeIngQty(Math.max(0, parseFloat(e.target.value) || 0))}
-                                                                                placeholder="Quantity (e.g. 18)"
-                                                                                className="w-full px-2.5 py-1.5 bg-[var(--surface)] border border-[var(--border)] rounded-lg text-xs"
-                                                                            />
-                                                                            <button
-                                                                                type="button"
-                                                                                onClick={() => {
-                                                                                    if (!recipeIngId || recipeIngQty <= 0) return;
-                                                                                    if (editRecipe.some(r => r.ingredient_id === recipeIngId)) {
-                                                                                        setEditError('Ingredient already added to recipe.');
-                                                                                        return;
-                                                                                    }
-                                                                                    setEditRecipe([...editRecipe, { ingredient_id: recipeIngId, quantity: recipeIngQty }]);
-                                                                                    setRecipeIngId('');
-                                                                                    setRecipeIngQty(0);
-                                                                                    setEditError('');
+                                                                                type="checkbox"
+                                                                                checked={editTrackStock}
+                                                                                onChange={(e) => {
+                                                                                    setEditTrackStock(e.target.checked);
+                                                                                    if (!e.target.checked) setEditStock(0);
                                                                                 }}
-                                                                                className="btn-secondary py-1.5 px-3 border rounded-lg text-[10px] cursor-pointer transition-all"
+                                                                                className="rounded border-[var(--border)] text-[var(--accent)] focus:ring-[var(--accent)]"
+                                                                            />
+                                                                            <span className="text-[11px] font-bold text-[var(--fg)]">Track finished stock directly (e.g. pastries)</span>
+                                                                        </label>
+                                                                    </div>
+
+                                                                    {/* Recipe Editor section */}
+                                                                    <div className="space-y-2.5 border-t border-[var(--border)] pt-4">
+                                                                        <span className="text-[10px] font-bold text-[var(--muted)] uppercase tracking-[0.06em]">Recipe Decomposition</span>
+
+                                                                        {/* Ingredients List */}
+                                                                        {editRecipe.length === 0 ? (
+                                                                            <p className="text-[var(--muted)] text-[11px] italic p-3 text-center border border-dashed border-[var(--border)] rounded-xl bg-[var(--bg)]">No raw stock ingredients linked to this product.</p>
+                                                                        ) : (
+                                                                            <div className="space-y-1.5 max-h-[160px] overflow-y-auto pr-1 no-scrollbar">
+                                                                                {editRecipe.map((recipeItem, idx) => {
+                                                                                    const ing = ingredients.find(i => i.id === recipeItem.ingredient_id);
+                                                                                    return (
+                                                                                        <div key={idx} className="flex justify-between items-center text-xs bg-[var(--bg)] px-2.5 py-2 rounded-xl border border-[var(--border)]">
+                                                                                            <span>{ing?.name || 'Unknown'} - <strong className="num text-[var(--fg)]">{recipeItem.quantity} {ing?.unit || 'g'}</strong></span>
+                                                                                            <button
+                                                                                                type="button"
+                                                                                                onClick={() => setEditRecipe(prev => prev.filter(r => r.ingredient_id !== recipeItem.ingredient_id))}
+                                                                                                className="text-[var(--danger)] hover:text-red-700 font-extrabold cursor-pointer text-xs"
+                                                                                            >
+                                                                                                Remove
+                                                                                            </button>
+                                                                                        </div>
+                                                                                    );
+                                                                                })}
+                                                                            </div>
+                                                                        )}
+
+                                                                        {/* Add ingredient Row */}
+                                                                        <div className="bg-[color-mix(in_oklch,var(--fg)_3%,var(--surface))] p-3 rounded-xl border border-[var(--border)] space-y-2 text-xs">
+                                                                            <div className="text-[9px] font-bold text-[var(--accent)] uppercase tracking-[0.06em]">Add Ingredient Item</div>
+                                                                            <select
+                                                                                aria-label="Add ingredient to recipe"
+                                                                                value={recipeIngId}
+                                                                                onChange={(e) => setRecipeIngId(e.target.value)}
+                                                                                className="w-full px-2 py-2 bg-[var(--surface)] border border-[var(--border)] rounded-lg text-xs"
                                                                             >
-                                                                                + Add
-                                                                            </button>
+                                                                                <option value="">-- Select Ingredient --</option>
+                                                                                {ingredients.map(i => (
+                                                                                    <option key={i.id} value={i.id}>{i.name} ({i.unit})</option>
+                                                                                ))}
+                                                                            </select>
+                                                                            <div className="grid grid-cols-[1fr_auto] gap-2 items-center">
+                                                                                <input
+                                                                                    aria-label="Recipe ingredient quantity"
+                                                                                    type="number"
+                                                                                    value={recipeIngQty || ''}
+                                                                                    onChange={(e) => setRecipeIngQty(Math.max(0, parseFloat(e.target.value) || 0))}
+                                                                                    placeholder="Quantity (e.g. 18)"
+                                                                                    className="w-full px-2.5 py-1.5 bg-[var(--surface)] border border-[var(--border)] rounded-lg text-xs"
+                                                                                />
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() => {
+                                                                                        if (!recipeIngId || recipeIngQty <= 0) return;
+                                                                                        if (editRecipe.some(r => r.ingredient_id === recipeIngId)) {
+                                                                                            setEditError('Ingredient already added to recipe.');
+                                                                                            return;
+                                                                                        }
+                                                                                        setEditRecipe([...editRecipe, { ingredient_id: recipeIngId, quantity: recipeIngQty }]);
+                                                                                        setRecipeIngId('');
+                                                                                        setRecipeIngQty(0);
+                                                                                        setEditError('');
+                                                                                    }}
+                                                                                    className="btn-secondary py-1.5 px-3 border rounded-lg text-[10px] cursor-pointer transition-all"
+                                                                                >
+                                                                                    + Add
+                                                                                </button>
+                                                                            </div>
                                                                         </div>
                                                                     </div>
                                                                 </div>
-                                                            </div>
 
-                                                            <button
-                                                                type="submit"
-                                                                className="btn-primary w-full min-h-[46px] border text-xs rounded-xl transition-all cursor-pointer mt-6"
-                                                            >
-                                                                Save Product Details
-                                                            </button>
-                                                        </form>
-                                                    );
-                                                })() : (
-                                                    <div className="border border-dashed border-[var(--border)] rounded-xl p-8 text-center text-[var(--muted)] text-xs flex flex-col items-center justify-center gap-2 h-full my-auto">
-                                                        <span>📋</span>
-                                                        <span>Select a product from the list to modify its details, stock level, or recipe ingredients.</span>
-                                                    </div>
-                                                )}
-                                            </aside>
+                                                                <button
+                                                                    type="submit"
+                                                                    className="btn-primary w-full min-h-[46px] border text-xs rounded-xl transition-all cursor-pointer mt-6"
+                                                                >
+                                                                    Save Product Details
+                                                                </button>
+                                                            </form>
+                                                        );
+                                                    })() : (
+                                                        <div className="border border-dashed border-[var(--border)] rounded-xl p-8 text-center text-[var(--muted)] text-xs flex flex-col items-center justify-center gap-2 h-full my-auto">
+                                                            <span>📋</span>
+                                                            <span>Select a product from the list to modify its details, stock level, or recipe ingredients.</span>
+                                                        </div>
+                                                    )}
+                                                </aside>
+                                            </div>
                                         </div>
                                     )}
 

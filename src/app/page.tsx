@@ -154,7 +154,7 @@ export default function LandingPage() {
                     )}
 
                     {/* Sales History Card */}
-                    {user && (user.role === 'admin' || user.role === 'owner' || user.role === 'manager' || user.role === 'cashier') && (
+                    {user && (user.role === 'admin' || user.role === 'owner' || user.role === 'manager') && (
                     <button
                         onClick={() => router.push('/admin/inventory?tab=reports')}
                         className="btn-tile h-full min-h-[200px] lg:min-h-[240px] rounded-[18px] border p-6 sm:p-7 text-left flex flex-col justify-between active:scale-[0.99] transition-all cursor-pointer group"
@@ -167,12 +167,10 @@ export default function LandingPage() {
                         </div>
                         <div className="mt-8">
                             <h2 className="text-2xl font-display font-bold text-[var(--fg)] group-hover:text-[var(--accent)] transition-colors">
-                                {user.role === 'cashier' ? 'My transaction history' : 'Sales history'}
+                                Sales history
                             </h2>
                             <p className="text-[var(--muted)] text-sm mt-2">
-                                {user.role === 'cashier'
-                                    ? 'Check your completed sales, transactions, and own register totals.'
-                                    : 'Check completed sales, discounts, and register totals by date.'}
+                                Check completed sales, discounts, and register totals by date.
                             </p>
                         </div>
                     </button>

@@ -90,7 +90,6 @@ export function canRoleAccessPath(role: StaffRole, pathname: string): boolean {
     if (role === 'cashier') {
         const cashierAllowed = [
             '/pos',
-            '/admin/inventory', // allowed for viewing own sales history
             '/api/products',
             '/api/ingredients',
             '/api/orders'
